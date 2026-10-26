@@ -1,8 +1,6 @@
 (function(){
     var D = document, 
-        Q = s => D.querySelectorAll(s), 
-        M_EN2BE = [],
-        M_BE2EN = [];
+        Q = s => D.querySelectorAll(s);
 
     // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ ===
     function getLang() {
@@ -31,78 +29,48 @@
         D.getElementById('btn-en').onclick = () => setLang('en');
     }
 
-    // === 2. ПОИСК С УЧЕТОМ UNICODE-РЕГИСТРА И БУКВ І/I ===
+    // === 2. ПОДГОТОВКА И ПРЕКОМПИЛЯЦИЯ СЛОВАРЕЙ (Однократно при загрузке) ===
     function escapeRegExp(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    function makeRegex(text) {
-        var pattern = escapeRegExp(text).replace(/[ІіIi]/g, '[ІіIi]');
-        return new RegExp(pattern, 'giu');
+    function compileDict(pairs) {
+        var list = [];
+        pairs.forEach(p => {
+            var pattern = escapeRegExp(p[0]).replace(/[ІіIi]/g, '[ІіIi]');
+            list.push({
+                k: p[0],
+                v: p[1],
+                reg: new RegExp(pattern, 'giu')
+            });
+        });
+        list.sort((a, b) => b.k.length - a.k.length);
+        return list;
     }
 
-    // === 3. СЛОВАРИ ===
-
-    // А) EN -> BE (Для белорусской версии)
-    var en2be_pairs = [
-        // Формы и кнопки
-        ["SEND MESSAGE", "АДПРАВІЦЬ ПАВЕДАМЛЕННЕ"],
-        ["Send message", "Адправіць паведамленне"],
-        ["FIRST NAME *", "ІМЯ *"],
-        ["First name *", "Імя *"],
-        ["First Name *", "Імя *"],
-        ["FIRST NAME", "ІМЯ"],
-        ["First name", "Імя"],
-        ["First Name", "Імя"],
-        ["PHONE NUMBER", "ТЭЛЕФОН"],
-        ["Phone number", "Тэлефон"],
-        ["Phone Number", "Тэлефон"],
-        ["WEBSITE", "САЙТ"],
-        ["Website", "Сайт"],
-        ["SUBJECT *", "ТЭМА *"],
-        ["Subject *", "Тэма *"],
-        ["SUBJECT", "ТЭМА"],
-        ["Subject", "Тэма"],
-        ["MESSAGE *", "ПАВЕДАМЛЕННЕ *"],
-        ["Message *", "Паведамленне *"],
-        ["MESSAGE", "ПАВЕДАМЛЕННЕ"],
-        ["Message", "Паведамленне"],
-        ["PLEASE COPY THE FOLLOWING LETTERS", "УВЯДЗІЦЕ СІМВАЛЫ З MAЛЮНКА"],
-        ["Please copy the following letters", "Увядзіце сімвалы з малюнка"],
-        ["SEND", "АДПРАВІЦЬ"],
-        ["Send", "Адправіць"],
-        ["CONTACT US!", "ЗВЯЖЫЦЕСЯ З НАМІ!"],
-        ["Contact us!", "Звяжыцеся з намі!"],
-        ["CONTACT US", "ЗВЯЖЫЦЕСЯ З НАМІ"],
-        ["Contact us", "Звяжыцеся з намі"],
-
-        // Системные элементы
-        ["MORE", "БОЛЬШ"],
-        ["More", "БОЛЬШ"],
-        ["more", "БОЛЬШ"],
-        ["LOADING...", "ЗАГРУЖАЕЦЦА..."],
-        ["Loading...", "Загружаецца..."],
-        ["Loading..", "Загружаецца.."],
-        ["Loading.", "Загружаецца."],
-        ["Loading", "Загружаецца"],
-        ["LISTEN PODCAST", "СЛУХАЦЬ ПАДКАСТ"],
-        ["Listen podcast", "Слухаць падкаст"],
-        ["DOWNLOAD PODCAST", "СПАМАВАЦЬ ПАДКАСТ"],
-        ["Download podcast", "Спампаваць падкаст"],
-        ["COMMENT", "КАМЕНТАВАЦЬ"],
-        ["Comment", "Каментаваць"],
-        ["COMMENTS", "КАМЕНТАРЫ"],
-        ["comments", "Каментары"],
-        ["LOG IN", "УВАЙСЦІ"],
-        ["log in", "Увайсці"],
-        ["CREATE ACCOUNT", "СТВАРЫЦЬ АКАЎНТ"],
-        ["create account", "Стварыць акаўнт"],
-        ["SEE ALSO", "ГЛЯДЗІЦЕ ТАКСАМА"],
-        ["See also", "Глядзіце таксама"],
-        ["VIEWS", "ПРАГЛЯДАЎ"],
-        ["views", "праглядаў"],
-
-        // Даты
+    // А) EN -> BE
+    var M_EN2BE = compileDict([
+        ["FIRST NAME *", "ІМЯ *"], ["First name *", "Імя *"], ["First Name *", "Імя *"],
+        ["FIRST NAME", "ІМЯ"], ["First name", "Імя"], ["First Name", "Імя"],
+        ["PHONE NUMBER", "ТЭЛЕФОН"], ["Phone number", "Тэлефон"], ["Phone Number", "Тэлефон"],
+        ["WEBSITE", "САЙТ"], ["Website", "Сайт"],
+        ["SUBJECT *", "ТЭМА *"], ["Subject *", "Тэма *"], ["SUBJECT", "ТЭМА"], ["Subject", "Тэма"],
+        ["MESSAGE *", "ПАВЕДАМЛЕННЕ *"], ["Message *", "Паведамленне *"], ["MESSAGE", "ПАВЕДАМЛЕННЕ"], ["Message", "Паведамленне"],
+        ["PLEASE COPY THE FOLLOWING LETTERS", "УВЯДЗІЦЕ СІМВАЛЫ З МАЛЮНКА"], ["Please copy the following letters", "Увядзіце сімвалы з малюнка"],
+        ["SEND MESSAGE", "АДПРАВІЦЬ ПАВЕДАМЛЕННЕ"], ["Send message", "Адправіць паведамленне"],
+        ["SEND", "АДПРАВІЦЬ"], ["Send", "Адправіць"],
+        ["CONTACT US!", "ЗВЯЖЫЦЕСЯ З НАМІ!"], ["Contact us!", "Звяжыцеся з намі!"], ["CONTACT US", "ЗВЯЖЫЦЕСЯ З НАМІ"], ["Contact us", "Звяжыцеся з намі"],
+        ["MUSICS", "МУЗЫКА"], ["Musics", "Музыка"],
+        ["MORE", "БОЛЬШ"], ["More", "БОЛЬШ"], ["more", "БОЛЬШ"],
+        ["LOADING...", "ЗАГРУЖАЕЦЦА..."], ["Loading...", "Загружаецца..."], ["Loading..", "Загружаецца.."], ["Loading.", "Загружаецца."], ["Loading", "Загружаецца"],
+        ["LISTEN PODCAST", "СЛУХАЦЬ ПАДКАСТ"], ["Listen podcast", "Слухаць падкаст"],
+        ["DOWNLOAD PODCAST", "СПАМАВАЦЬ ПАДКАСТ"], ["Download podcast", "Спампаваць падкаст"],
+        ["COMMENT", "КАМЕНТАВАЦЬ"], ["Comment", "Каментаваць"],
+        ["COMMENTS", "КАМЕНТАРЫ"], ["comments", "Каментары"],
+        ["LOG IN", "УВАЙСЦІ"], ["log in", "Увайсці"],
+        ["CREATE ACCOUNT", "СТВАРЫЦЬ АКАЎНТ"], ["create account", "Стварыць акаўнт"],
+        ["SEE ALSO", "ГЛЯДЗІЦЕ ТАКСАМА"], ["See also", "Глядзіце таксама"],
+        ["VIEWS", "ПРАГЛЯДАЎ"], ["views", "праглядаў"],
         ["January", "студзеня"], ["February", "лютага"], ["March", "сакавіка"], ["April", "красавіка"],
         ["May", "траўня"], ["June", "чэрвеня"], ["July", "ліпеня"], ["August", "жніўня"],
         ["September", "верасня"], ["October", "кастрычніка"], ["November", "лістапада"], ["December", "снежня"],
@@ -110,101 +78,76 @@
         ["minute ago", "ХВІЛІНУ ТАМУ"], ["days ago", "ДЗЁН ТАМУ"], ["day ago", "ДЗЕНЬ ТАМУ"],
         ["weeks ago", "ТЫДНЯЎ ТАМУ"], ["week ago", "ТЫДЗЕНЬ ТАМУ"], ["months ago", "МЕСЯЦАЎ ТАМУ"],
         ["month ago", "МЕСЯЦ ТАМУ"], ["years ago", "ГАДОЎ ТАМУ"], ["year ago", "ГОД ТАМУ"]
-    ];
+    ]);
 
-    en2be_pairs.sort((a,b) => b[0].length - a[0].length);
-    en2be_pairs.forEach(p => {
-        M_EN2BE.push({k: p[0], v: p[1]});
-    });
+    // Б) BE -> EN
+    var M_BE2EN = compileDict([
+        ["Звяжыцеся з намі!", "Contact Us!"], ["Звяжыцеся з намі", "Contact Us"],
+        ["ЗВЯЖЫЦЕСЯ З НАМІ!", "CONTACT US!"], ["ЗВЯЖЫЦЕСЯ З НАМІ", "CONTACT US"],
+        ["АПОШНІЯ НАВІНЫ", "LATEST NEWS"], ["Апошнія навіны", "Latest News"],
+        ["АПОШНІЯ ПАДКАСТЫ", "LATEST PODCASTS"], ["Апошнія падкасты", "Latest Podcasts"],
+        ["НАШЫ САЦСЕТКІ", "OUR SOCIALS"], ["Нашы сацсеткі", "Our Socials"],
+        ["Беларуская палітыка", "Belarusian Politics"], ["Беларусь-Смаленск", "Belarus-Smolensk"],
+        ["Вядоўцы", "Hosts"], ["ВЯДОЎЦЫ", "HOSTS"],
+        ["Кіраўніцтва", "Management"], ["КІРАЎНІЦТВА", "MANAGEMENT"],
+        ["ГАЛОЎНАЯ", "HOME"], ["Галоўная", "Home"],
+        ["НАВІНЫ", "NEWS"], ["Навіны", "News"], ["навіны", "news"],
+        ["СЛУХАЦЬ", "LISTEN"], ["Слухаць", "Listen"],
+        ["ПАДКАСТЫ", "PODCASTS"], ["Падкасты", "Podcasts"],
+        ["ПАДКАСТ", "PODCAST"], ["Падкаст", "Podcast"],
+        ["МУЗЫКА", "MUSIC"], ["Музыка", "Music"],
+        ["ВІДЭА", "VIDEO"], ["Відэа", "Video"],
+        ["АРТЫКУЛЫ", "ARTICLES"], ["Артыкулы", "Articles"],
+        ["КАНТАКТ", "CONTACT"], ["Кантакт", "Contact"],
+        ["КАМАНДА", "TEAM"], ["Каманда", "Team"],
+        ["ПЛЭЙЛІСТЫ", "PLAYLISTS"], ["Плэйлісты", "Playlists"],
+        ["ГАЛЕРЭЯ", "GALLERY"], ["Галерэя", "Gallery"],
+        ["Беларусь", "Belarus"], ["Польшча", "Poland"], ["Расія", "Russia"], ["Смаленск", "Smolensk"], ["Украіна", "Ukraine"],
+        ["БОЛЬШ", "MORE"], ["Больш", "More"], ["больш", "more"]
+    ]);
 
-    // Б) BE -> EN (Для английской версии)
-    var be2en_pairs = [
-        ["НАВІНЫ", "NEWS"],
-        ["Навіны", "News"],
-        ["навіны", "news"],
-        ["ГАЛОЎНАЯ", "HOME"],
-        ["Галоўная", "Home"],
-        ["СЛУХАЦЬ", "LISTEN"],
-        ["Слухаць", "Listen"],
-        ["ВІДЭА", "VIDEO"],
-        ["Відэа", "Video"],
-        ["АРТЫКУЛЫ", "ARTICLES"],
-        ["Артыкулы", "Articles"],
-        ["КАНТАКТ", "CONTACT"],
-        ["Кантакт", "Contact"],
-        ["ПАДКАСТЫ", "PODCASTS"],
-        ["Падкасты", "Podcasts"],
-        ["ПАДКАСТ", "PODCAST"],
-        ["Падкаст", "Podcast"],
-        ["МУЗЫКА", "MUSIC"],
-        ["Музыка", "Music"],
-        ["КАМАНДА", "TEAM"],
-        ["Каманда", "Team"],
-        ["ЗВЯЖЫЦЕСЯ З НАМІ!", "CONTACT US!"],
-        ["Звяжыцеся з намі!", "Contact Us!"],
-        ["Звяжыцеся з намі", "Contact Us"],
-        ["АПОШНІЯ НАВІНЫ", "LATEST NEWS"],
-        ["Апошнія навіны", "Latest News"],
-        ["АПОШНІЯ ПАДКАСТЫ", "LATEST PODCASTS"],
-        ["Апошнія падкасты", "Latest Podcasts"],
-        ["НАШЫ САЦСЕТКІ", "OUR SOCIALS"],
-        ["Нашы сацсеткі", "Our Socials"],
-        ["Беларуская палітыка", "Belarusian Politics"],
-        ["Беларусь-Смаленск", "Belarus-Smolensk"],
-        ["Беларусь", "Belarus"],
-        ["Польшча", "Poland"],
-        ["Расія", "Russia"],
-        ["Смаленск", "Smolensk"],
-        ["Украіна", "Ukraine"],
-        ["Плэйлісты", "Playlists"],
-        ["Галерэя", "Gallery"],
-        ["БОЛЬШ", "MORE"],
-        ["Больш", "More"],
-        ["больш", "more"]
-    ];
-
-    be2en_pairs.sort((a,b) => b[0].length - a[0].length);
-    be2en_pairs.forEach(p => {
-        M_BE2EN.push({k: p[0], v: p[1]});
-    });
-
-    // === 4. ПРЯМАЯ ФУНКЦИЯ ПЕРЕВОДА (Без ловушки reg.test) ===
+    // === 3. ФУНКЦИЯ ПЕРЕВОДА (Оптимизированная) ===
     function translatePage(dict) {
-        // 1. Текстовые узлы DOM
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while(n = w.nextNode()){
             if(n.parentNode && ['SCRIPT','STYLE','TEXTAREA'].includes(n.parentNode.tagName)) continue;
-            var t = n.nodeValue, changed = 0;
-            dict.forEach(x => {
-                var reg = makeRegex(x.k);
-                var newT = t.replace(reg, x.v);
-                if(newT !== t){
-                    t = newT;
-                    changed = 1;
+            var t = n.nodeValue;
+            if(!t || !t.trim()) continue;
+            
+            var newT = t;
+            for(var i = 0; i < dict.length; i++) {
+                var item = dict[i];
+                item.reg.lastIndex = 0;
+                if(item.reg.test(newT)) {
+                    item.reg.lastIndex = 0;
+                    newT = newT.replace(item.reg, item.v);
                 }
-            });
-            if(changed) n.nodeValue = t;
+            }
+            if(newT !== t) n.nodeValue = newT;
         }
 
-        // 2. Инпуты, Формы, Кнопки
-        Q('input, textarea, button, label, a, h1, h2, h3, h4, .title').forEach(e => {
-            dict.forEach(x => {
-                var reg = makeRegex(x.k);
-                
+        Q('input, textarea, button, label').forEach(e => {
+            for(var i = 0; i < dict.length; i++) {
+                var item = dict[i];
                 if(e.placeholder) {
-                    var newP = e.placeholder.replace(reg, x.v);
-                    if(newP !== e.placeholder) e.placeholder = newP;
+                    item.reg.lastIndex = 0;
+                    if(item.reg.test(e.placeholder)) {
+                        item.reg.lastIndex = 0;
+                        e.placeholder = e.placeholder.replace(item.reg, item.v);
+                    }
                 }
-
                 if(e.tagName === 'INPUT' && e.value && typeof e.value === 'string') {
-                    var newV = e.value.replace(reg, x.v);
-                    if(newV !== e.value) e.value = newV;
+                    item.reg.lastIndex = 0;
+                    if(item.reg.test(e.value)) {
+                        item.reg.lastIndex = 0;
+                        e.value = e.value.replace(item.reg, item.v);
+                    }
                 }
-            });
+            }
         });
     }
 
-    // === 5. СТИЛИ И ФИКС МЕНЮ ===
+    // === 4. СТИЛИ И ФИКС МЕНЮ ===
     if(!D.getElementById('tc')) {
         D.head.insertAdjacentHTML('beforeend','<style id="tc">.tc::before,.tc a::before{display:none!important}.tc{position:relative!important;overflow:hidden!important;background:0 0!important}.tc a{position:relative;z-index:2;transition:color .3s}.tc::after{content:"";position:absolute;top:-100%;left:0;width:100%;height:100%;background:#24A1DE;transition:top .25s;z-index:1}.tc:hover::after{top:0}.tc:hover a{color:#fff!important}</style>');
     }
@@ -243,9 +186,9 @@
 
     setTimeout(fixMenuOnce, 300);
     setTimeout(fixMenuOnce, 1000);
-    setInterval(fixMenuOnce, 2000);
+    setInterval(fixMenuOnce, 2500);
 
-    // === 6. ОСНОВНОЙ ЦИКЛ ОБРАБОТКИ ===
+    // === 5. ЦИКЛ ВЫПОЛНЕНИЯ (Каждую 1 секунду) ===
     setInterval(() => {
         if(!D.body) return;
 
