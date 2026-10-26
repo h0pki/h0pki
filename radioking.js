@@ -1,7 +1,12 @@
 (function(){
     var D = document;
 
-   // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
+    // Функция нормализации текста (убирает пробелы, регистр и объединяет кириллическую/латинскую І)
+    function norm(str) {
+        return (str || "").trim().toLowerCase().replace(/[іi]/g, 'i');
+    }
+
+    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
     function getLang() { 
         return localStorage.getItem('site_lang') || 'be'; 
     }
@@ -108,8 +113,8 @@
         D.getElementById('btn-en').onclick = function(){ setLang('en'); };
     }
 
-    // === 2. СЛОВАРИ ТОЧНЫХ СОВПАДЕНИЙ (Из работавшей версии) ===
-    var BE2EN = {
+    // === 2. СЛОВАРИ С НОРМАЛИЗАЦИЕЙ КЛЮЧЕЙ ===
+    var BE2EN_RAW = {
         "галоўная": "HOME",
         "навіны": "NEWS",
         "слухаць": "LISTEN",
@@ -151,7 +156,7 @@
         "адправіць": "SEND"
     };
 
-    var EN2BE = {
+    var EN2BE_RAW = {
         "home": "ГАЛОЎНАЯ",
         "news": "НАВІНЫ",
         "listen": "СЛУХАЦЬ",
@@ -196,30 +201,47 @@
         "loading": "ЗАГРУЖАЕЦЦА"
     };
 
-    // === 3. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА (Из работавшей версии) ===
+    var BE2EN = {}, EN2BE = {};
+    for (var k in BE2EN_RAW) { BE2EN[norm(k)] = BE2EN_RAW[k]; }
+    for (var k in EN2BE_RAW) { EN2BE[norm(k)] = EN2BE_RAW[k]; }
+
+    // Перевод динамических дат на белорусский (1 DAY AGO -> 1 ДЗЕНЬ ТАМУ)
+    function translateDates(text) {
+        return text
+            .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
+            .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
+            .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 МЕСЯЦ ТАМУ' : num + ' МЕСЯЦАЎ ТАМУ'; })
+            .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
+            .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
+    }
+
+    // === 3. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА ===
     function runTranslation() {
         var lang = getLang();
         var map = (lang === 'en') ? BE2EN : EN2BE;
 
-        var elements = D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div');
+        var elements = D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div, p');
         elements.forEach(function(el){
             if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return;
             if (el.children.length === 0 && el.textContent) {
-                var cleanTxt = el.textContent.trim().toLowerCase();
-                if (map[cleanTxt]) {
-                    el.textContent = map[cleanTxt];
+                var cleanNorm = norm(el.textContent);
+                if (map[cleanNorm]) {
+                    el.textContent = map[cleanNorm];
+                } else if (lang === 'be') {
+                    var dateTrans = translateDates(el.textContent);
+                    if (dateTrans !== el.textContent) el.textContent = dateTrans;
                 }
             }
         });
 
         D.querySelectorAll('input, textarea').forEach(function(el){
             if (el.placeholder) {
-                var p = el.placeholder.trim().toLowerCase();
-                if (map[p]) el.placeholder = map[p];
+                var pNorm = norm(el.placeholder);
+                if (map[pNorm]) el.placeholder = map[pNorm];
             }
             if (el.tagName === 'INPUT' && el.value && typeof el.value === 'string') {
-                var v = el.value.trim().toLowerCase();
-                if (map[v]) el.value = map[v];
+                var vNorm = norm(el.value);
+                if (map[vNorm]) el.value = map[vNorm];
             }
         });
 
@@ -228,9 +250,13 @@
             if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
             var val = n.nodeValue;
             if (!val || !val.trim()) continue;
-            var trimmedLower = val.trim().toLowerCase();
-            if (map[trimmedLower]) {
-                n.nodeValue = map[trimmedLower];
+            
+            var keyNorm = norm(val);
+            if (map[keyNorm]) {
+                n.nodeValue = map[keyNorm];
+            } else if (lang === 'be') {
+                var dateTrans = translateDates(val);
+                if (dateTrans !== val) n.nodeValue = dateTrans;
             }
         }
     }
