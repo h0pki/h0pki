@@ -1,9 +1,25 @@
 (function(){
     var D = document;
 
-    // Функция нормализации текста (убирает пробелы, регистр и объединяет кириллическую/латинскую І)
+    // Глубокая нормализация (убирает неразрывные пробелы, регистр и объединяет латинские двойники с кириллицей)
     function norm(str) {
-        return (str || "").trim().toLowerCase().replace(/[іi]/g, 'i');
+        if (!str) return "";
+        return str
+            .replace(/[\u00A0\s]+/g, ' ')
+            .trim()
+            .toLowerCase()
+            .replace(/h/g, 'н')
+            .replace(/a/g, 'а')
+            .replace(/b/g, 'в')
+            .replace(/i/g, 'і')
+            .replace(/y/g, 'ы')
+            .replace(/o/g, 'о')
+            .replace(/p/g, 'р')
+            .replace(/c/g, 'с')
+            .replace(/e/g, 'е')
+            .replace(/t/g, 'т')
+            .replace(/k/g, 'к')
+            .replace(/x/g, 'х');
     }
 
     // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
@@ -113,7 +129,7 @@
         D.getElementById('btn-en').onclick = function(){ setLang('en'); };
     }
 
-    // === 2. СЛОВАРИ С НОРМАЛИЗАЦИЕЙ КЛЮЧЕЙ ===
+    // === 2. СЛОВАРИ ===
     var BE2EN_RAW = {
         "галоўная": "HOME",
         "навіны": "NEWS",
@@ -205,7 +221,6 @@
     for (var k in BE2EN_RAW) { BE2EN[norm(k)] = BE2EN_RAW[k]; }
     for (var k in EN2BE_RAW) { EN2BE[norm(k)] = EN2BE_RAW[k]; }
 
-    // Перевод динамических дат на белорусский (1 DAY AGO -> 1 ДЗЕНЬ ТАМУ)
     function translateDates(text) {
         return text
             .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
