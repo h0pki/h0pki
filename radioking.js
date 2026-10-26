@@ -1,7 +1,7 @@
 (function(){
     var D = document;
 
-    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ ===
+    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И СТИЛЬНАЯ КНОПКА C ФЛАГАМИ ===
     function getLang() { 
         return localStorage.getItem('site_lang') || 'be'; 
     }
@@ -14,22 +14,98 @@
     function renderLangSwitcher() {
         if (D.getElementById('lang-switcher')) return;
         var currentLang = getLang();
+
+        // Добавляем адаптивные стили в head
+        if (!D.getElementById('lang-switcher-styles')) {
+            D.head.insertAdjacentHTML('beforeend', `
+                <style id="lang-switcher-styles">
+                    #lang-switcher {
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        z-index: 999999;
+                        background: rgba(255, 255, 255, 0.95);
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        padding: 6px 14px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: #333;
+                        box-shadow: 0 4px 16px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08);
+                        user-select: none;
+                        transition: all 0.2s ease;
+                    }
+                    .lang-btn {
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding-bottom: 3px;
+                        border-bottom: 2px solid transparent;
+                        color: #666;
+                        transition: all 0.2s ease;
+                    }
+                    .lang-btn.active {
+                        color: #0d5c8a;
+                        border-bottom-color: #0d5c8a;
+                    }
+                    .lang-btn:hover {
+                        color: #111;
+                    }
+                    .lang-divider {
+                        color: #ccc;
+                        font-weight: 300;
+                    }
+                    /* Адаптив под мобильные устройства */
+                    @media (max-width: 768px) {
+                        #lang-switcher {
+                            bottom: 12px;
+                            right: 12px;
+                            padding: 5px 10px;
+                            font-size: 12px;
+                            gap: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+                        }
+                        .lang-btn {
+                            gap: 4px;
+                        }
+                    }
+                </style>
+            `);
+        }
+
         var box = D.createElement('div');
         box.id = 'lang-switcher';
-        box.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:rgba(0,0,0,0.85);padding:7px 14px;border-radius:20px;display:flex;gap:8px;font-family:sans-serif;font-size:13px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.4);user-select:none;';
+
+        // SVG Флаг БЧБ (Бело-красно-белый)
+        var bcbFlag = '<svg width="18" height="12" viewBox="0 0 18 12" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><rect width="18" height="12" fill="#FFFFFF"/><rect y="4" width="18" height="4" fill="#D62626"/></svg>';
+        
+        // SVG Флаг Великобритании (Union Jack)
+        var ukFlag = '<svg width="18" height="12" viewBox="0 0 60 30" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><clipPath id="gb_clip"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#gb_clip)"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>';
+
         box.innerHTML = `
-            <span id="btn-be" style="cursor:pointer;font-weight:${currentLang==='be'?'bold':'normal'};color:${currentLang==='be'?'#24A1DE':'#ccc'}">BE</span>
-            <span style="color:#555">|</span>
-            <span id="btn-en" style="cursor:pointer;font-weight:${currentLang==='en'?'bold':'normal'};color:${currentLang==='en'?'#24A1DE':'#ccc'}">EN</span>
+            <div id="btn-be" class="lang-btn ${currentLang==='be'?'active':''}">
+                ${bcbFlag}
+                <span>БЕЛ</span>
+            </div>
+            <span class="lang-divider">|</span>
+            <div id="btn-en" class="lang-btn ${currentLang==='en'?'active':''}">
+                ${ukFlag}
+                <span>ENG</span>
+            </div>
         `;
         D.body.appendChild(box);
+
         D.getElementById('btn-be').onclick = function(){ setLang('be'); };
         D.getElementById('btn-en').onclick = function(){ setLang('en'); };
     }
 
     // === 2. СЛОВАРИ ТОЧНЫХ СОВПАДЕНИЙ ===
-    
-    // Белорусский -> Английский (для режима EN)
     var BE2EN = {
         "галоўная": "HOME",
         "навіны": "NEWS",
@@ -72,7 +148,6 @@
         "адправіць": "SEND"
     };
 
-    // Английский -> Белорусский (для режима BE)
     var EN2BE = {
         "home": "ГАЛОЎНАЯ",
         "news": "НАВІНЫ",
@@ -123,12 +198,9 @@
         var lang = getLang();
         var map = (lang === 'en') ? BE2EN : EN2BE;
 
-        // Прямая подмена текста элементов (шапка, меню, категории, кнопки)
         var elements = D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div');
         elements.forEach(function(el){
             if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return;
-            
-            // Если внутри элемента нет других вложенных тегов, проверяем его текст
             if (el.children.length === 0 && el.textContent) {
                 var cleanTxt = el.textContent.trim().toLowerCase();
                 if (map[cleanTxt]) {
@@ -137,7 +209,6 @@
             }
         });
 
-        // Подмена инпутов и полей ввода
         D.querySelectorAll('input, textarea').forEach(function(el){
             if (el.placeholder) {
                 var p = el.placeholder.trim().toLowerCase();
@@ -149,7 +220,6 @@
             }
         });
 
-        // Дополнительный проход по текстовым узлам
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while (n = w.nextNode()) {
             if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
@@ -208,13 +278,12 @@
         D.head.insertAdjacentHTML('beforeend','<style id="tc">.tc::before,.tc a::before{display:none!important}.tc{position:relative!important;overflow:hidden!important;background:0 0!important}.tc a{position:relative;z-index:2;transition:color .3s}.tc::after{content:"";position:absolute;top:-100%;left:0;width:100%;height:100%;background:#24A1DE;transition:top .25s;z-index:1}.tc:hover::after{top:0}.tc:hover a{color:#fff!important}</style>');
     }
 
-    // Запуск проверки каждые 500 мс (без нагрузки на ЦП)
     setInterval(function(){
         if(!D.body) return;
         renderLangSwitcher();
         runTranslation();
         fixMenuOnce();
         fixSocialsAndFooter();
-    }, 1000);
+    }, 500);
 
 })();
