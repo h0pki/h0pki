@@ -1,6 +1,7 @@
 (function(){
     var D = document;
 
+    // Нормализация текста (убирает неразрывные пробелы, регистр и объединяет І/I)
     function norm(str) {
         if (!str) return "";
         return str
@@ -117,7 +118,7 @@
         D.getElementById('btn-en').onclick = function(){ setLang('en'); };
     }
 
-    // === 2. СЛОВАРИ ===
+    // === 2. СЛОВАРИ ТОЧНЫХ СОВПАДЕНИЙ ===
     var BE2EN_RAW = {
         "галоўная": "HOME",
         "навіны": "NEWS",
@@ -153,6 +154,8 @@
         "пароль": "PASSWORD",
         "электронная пошта": "EMAIL",
         "забыліся пароль?": "FORGOTTEN PASSWORD?",
+        "глядзіце таксама": "SEE ALSO",
+        "увайдзіце, каб пакінуць каментар": "LOG IN TO COMMENT",
         "імя *": "FIRST NAME *",
         "імя": "FIRST NAME",
         "тэлефон": "PHONE NUMBER",
@@ -167,6 +170,9 @@
     };
 
     var EN2BE_RAW = {
+        "see also": "Глядзіце таксама",
+        "see also:": "Глядзіце таксама:",
+        "log in to comment": "Увайдзіце, каб пакінуць каментар",
         "connection": "УВАХОД",
         "create account": "СТВАРЫЦЬ АКАЎНТ",
         "email": "Электронная пошта",
@@ -175,8 +181,6 @@
         "login": "УВАЙСЦІ",
         "log in!": "УВАЙСЦІ!",
         "forgotten password?": "Забыліся пароль?",
-        "forgotten password": "Забыліся пароль?",
-        "forgot password?": "Забыліся пароль?",
         "home": "ГАЛОЎНАЯ",
         "news": "НАВІНЫ",
         "listen": "СЛУХАЦЬ",
@@ -188,7 +192,7 @@
         "music": "МУЗЫКА",
         "musics": "МУЗЫКА",
         "team": "КАМАНДА",
-        "playlists": "ПЛЭЙЛІСТЫ",
+        "playlists": "PLAYLISTS",
         "gallery": "ГАЛЕРЭЯ",
         "latest news": "АПОШНІЯ НАВІНЫ",
         "latest podcasts": "АПОШНІЯ ПАДКАСТЫ",
@@ -225,41 +229,104 @@
     for (var k in BE2EN_RAW) { BE2EN[norm(k)] = BE2EN_RAW[k]; }
     for (var k in EN2BE_RAW) { EN2BE[norm(k)] = EN2BE_RAW[k]; }
 
-    function translateDates(text) {
-        return text
-            .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
-            .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
-            .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 МЕСЯЦ ТАМУ' : num + ' МЕСЯЦАЎ ТАМУ'; })
-            .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
-            .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
+    // === 3. ДИНАМИЧЕСКАЯ ПОДМЕНА ДАТ, МЕСЯЦЕВ, ПРОСМОТРОВ И КОММЕНТАРИЕВ ===
+    function translateDynamicMeta(text, lang) {
+        if (!text || typeof text !== 'string') return text;
+        var res = text;
+
+        if (lang === 'be') {
+            // Относительные даты
+            res = res
+                .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
+                .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
+                .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 МЕСЯЦ ТАМУ' : num + ' МЕСЯЦАЎ ТАМУ'; })
+                .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
+                .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
+
+            // Месяцы в датах постов
+            res = res
+                .replace(/\bjanuary\b/gi, 'студзеня')
+                .replace(/\bfebruary\b/gi, 'лютага')
+                .replace(/\bmarch\b/gi, 'сакавіка')
+                .replace(/\bapril\b/gi, 'красавіка')
+                .replace(/\bmay\b/gi, 'траўня')
+                .replace(/\bjune\b/gi, 'чэрвеня')
+                .replace(/\bjuly\b/gi, 'ліпеня')
+                .replace(/\baugust\b/gi, 'жніўня')
+                .replace(/\bseptember\b/gi, 'верасня')
+                .replace(/\boctober\b/gi, 'кастрычніка')
+                .replace(/\bnovember\b/gi, 'лістапада')
+                .replace(/\bdecember\b/gi, 'снежня');
+
+            // Просмотры и комментарии
+            res = res
+                .replace(/\bviews\b/gi, 'ПРАГЛЯДАЎ')
+                .replace(/\bview\b/gi, 'ПРАГЛЯД')
+                .replace(/\bcomments\b/gi, 'Каментары')
+                .replace(/\bcomment\b/gi, 'Каментар')
+                .replace(/log in to comment/gi, 'Увайдзіце, каб пакінуць каментар')
+                .replace(/see also/gi, 'Глядзіце таксама');
+
+        } else if (lang === 'en') {
+            res = res
+                .replace(/\bстудзеня\b/gi, 'January')
+                .replace(/\bлютага\b/gi, 'February')
+                .replace(/\bсакавіка\b/gi, 'March')
+                .replace(/\bкрасавіка\b/gi, 'April')
+                .replace(/\bтраўня\b/gi, 'May')
+                .replace(/\bчэрвеня\b/gi, 'June')
+                .replace(/\bліпеня\b/gi, 'July')
+                .replace(/\bжніўня\b/gi, 'August')
+                .replace(/\bверасня\b/gi, 'September')
+                .replace(/\bкастрычніка\b/gi, 'October')
+                .replace(/\bлістапада\b/gi, 'November')
+                .replace(/\bснежня\b/gi, 'December')
+                .replace(/\bпраглядаў\b/gi, 'VIEWS')
+                .replace(/\bкаментары\b/gi, 'Comments')
+                .replace(/увайдзіце, каб пакінуць каментар/gi, 'Log in to comment')
+                .replace(/глядзіце таксама/gi, 'See also');
+        }
+
+        return res;
     }
 
-    // === 3. РЕКУРСИВНЫЙ ПОИСК И ПЕРЕВОД (Включая Shadow DOM) ===
-    function translateRoot(root, map, lang) {
-        if (!root) return;
+    // === 4. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА ===
+    function runTranslation() {
+        var lang = getLang();
+        var map = (lang === 'en') ? BE2EN : EN2BE;
 
-        // Поиск по всем элементам
-        var nodes = root.querySelectorAll ? root.querySelectorAll('*') : [];
-        nodes.forEach(function(el){
-            // Если у элемента есть теневой DOM (Shadow Root)
-            if (el.shadowRoot) {
-                translateRoot(el.shadowRoot, map, lang);
+        // Прямой обход DOM-дерева для текстовых узлов
+        var w = D.createTreeWalker(D.body, 4, null, 0), n;
+        while (n = w.nextNode()) {
+            if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
+            var val = n.nodeValue;
+            if (!val || !val.trim()) continue;
+            
+            var keyNorm = norm(val);
+            if (map[keyNorm]) {
+                n.nodeValue = map[keyNorm];
+            } else {
+                var dynTrans = translateDynamicMeta(val, lang);
+                if (dynTrans !== val) n.nodeValue = dynTrans;
             }
+        }
 
-            if (['SCRIPT','STYLE','TEXTAREA'].includes(el.tagName)) return;
-
-            // Перевод текста в концевых узлах
+        // Обход концевых элементов (заголовки, ссылки, плейсхолдеры)
+        D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div, p').forEach(function(el){
+            if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return;
             if (el.children.length === 0 && el.textContent) {
                 var cleanNorm = norm(el.textContent);
                 if (map[cleanNorm]) {
                     el.textContent = map[cleanNorm];
-                } else if (lang === 'be') {
-                    var dateTrans = translateDates(el.textContent);
-                    if (dateTrans !== el.textContent) el.textContent = dateTrans;
+                } else {
+                    var dynTrans = translateDynamicMeta(el.textContent, lang);
+                    if (dynTrans !== el.textContent) el.textContent = dynTrans;
                 }
             }
+        });
 
-            // Перевод плейсхолдеров и кнопок
+        // Инпуты и формы
+        D.querySelectorAll('input, textarea').forEach(function(el){
             if (el.placeholder) {
                 var pNorm = norm(el.placeholder);
                 if (map[pNorm]) el.placeholder = map[pNorm];
@@ -269,33 +336,9 @@
                 if (map[vNorm]) el.value = map[vNorm];
             }
         });
-
-        // Дополнительный проход по текстовым узлам
-        if (root.createTreeWalker) {
-            var w = root.createTreeWalker(root, 4, null, 0), n;
-            while (n = w.nextNode()) {
-                if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
-                var val = n.nodeValue;
-                if (!val || !val.trim()) continue;
-                
-                var keyNorm = norm(val);
-                if (map[keyNorm]) {
-                    n.nodeValue = map[keyNorm];
-                } else if (lang === 'be') {
-                    var dateTrans = translateDates(val);
-                    if (dateTrans !== val) n.nodeValue = dateTrans;
-                }
-            }
-        }
     }
 
-    function runTranslation() {
-        var lang = getLang();
-        var map = (lang === 'en') ? BE2EN : EN2BE;
-        translateRoot(D.body, map, lang);
-    }
-
-    // === 4. ФИКС МЕНЮ И СОЦСЕТЕЙ ===
+    // === 5. ФИКС МЕНЮ И СОЦСЕТЕЙ ===
     function isMobile(){ return window.innerWidth <= 1024; }
 
     function fixMenuOnce(){
@@ -336,7 +379,7 @@
         });
     }
 
-    // === 5. СТИЛИ И ИНИЦИАЛИЗАЦИЯ ===
+    // === 6. СТИЛИ И ИНИЦИАЛИЗАЦИЯ ===
     if(!D.getElementById('tc')) {
         D.head.insertAdjacentHTML('beforeend','<style id="tc">.tc::before,.tc a::before{display:none!important}.tc{position:relative!important;overflow:hidden!important;background:0 0!important}.tc a{position:relative;z-index:2;transition:color .3s}.tc::after{content:"";position:absolute;top:-100%;left:0;width:100%;height:100%;background:#24A1DE;transition:top .25s;z-index:1}.tc:hover::after{top:0}.tc:hover a{color:#fff!important}</style>');
     }
@@ -347,6 +390,6 @@
         runTranslation();
         fixMenuOnce();
         fixSocialsAndFooter();
-    }, 300);
+    }, 400);
 
 })();
