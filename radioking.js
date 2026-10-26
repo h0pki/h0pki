@@ -38,15 +38,16 @@
 
     function makeRegex(text) {
         var pattern = escapeRegExp(text).replace(/[ІіIi]/g, '[ІіIi]');
-        // Флаги giu включают поддержку Unicode для кириллических букв в любом регистре
         return new RegExp(pattern, 'giu');
     }
 
-    // === 3. СЛОВАРИ (Двусторонний перевод) ===
+    // === 3. СЛОВАРИ ===
 
-    // А) EN -> BE (Когда на сайте выбран белорусский язык)
+    // А) EN -> BE (Для белорусской версии)
     var en2be_pairs = [
-        // Форма контактов
+        // Формы и кнопки
+        ["SEND MESSAGE", "АДПРАВІЦЬ ПАВЕДАМЛЕННЕ"],
+        ["Send message", "Адправіць паведамленне"],
         ["FIRST NAME *", "ІМЯ *"],
         ["First name *", "Імя *"],
         ["First Name *", "Імя *"],
@@ -66,10 +67,8 @@
         ["Message *", "Паведамленне *"],
         ["MESSAGE", "ПАВЕДАМЛЕННЕ"],
         ["Message", "Паведамленне"],
-        ["PLEASE COPY THE FOLLOWING LETTERS", "УВЯДЗІЦЕ СІМВАЛЫ З МАЛЮНКА"],
+        ["PLEASE COPY THE FOLLOWING LETTERS", "УВЯДЗІЦЕ СІМВАЛЫ З MAЛЮНКА"],
         ["Please copy the following letters", "Увядзіце сімвалы з малюнка"],
-        ["SEND MESSAGE", "АДПРАВІЦЬ ПАВЕДАМЛЕННЕ"],
-        ["Send message", "Адправіць паведамленне"],
         ["SEND", "АДПРАВІЦЬ"],
         ["Send", "Адправіць"],
         ["CONTACT US!", "ЗВЯЖЫЦЕСЯ З НАМІ!"],
@@ -77,7 +76,7 @@
         ["CONTACT US", "ЗВЯЖЫЦЕСЯ З НАМІ"],
         ["Contact us", "Звяжыцеся з намі"],
 
-        // Кнопка More и Прелоадер
+        // Системные элементы
         ["MORE", "БОЛЬШ"],
         ["More", "БОЛЬШ"],
         ["more", "БОЛЬШ"],
@@ -86,8 +85,6 @@
         ["Loading..", "Загружаецца.."],
         ["Loading.", "Загружаецца."],
         ["Loading", "Загружаецца"],
-
-        // Интерфейс и системные надписи
         ["LISTEN PODCAST", "СЛУХАЦЬ ПАДКАСТ"],
         ["Listen podcast", "Слухаць падкаст"],
         ["DOWNLOAD PODCAST", "СПАМАВАЦЬ ПАДКАСТ"],
@@ -105,7 +102,7 @@
         ["VIEWS", "ПРАГЛЯДАЎ"],
         ["views", "праглядаў"],
 
-        // Даты и время
+        // Даты
         ["January", "студзеня"], ["February", "лютага"], ["March", "сакавіка"], ["April", "красавіка"],
         ["May", "траўня"], ["June", "чэрвеня"], ["July", "ліпеня"], ["August", "жніўня"],
         ["September", "верасня"], ["October", "кастрычніка"], ["November", "лістапада"], ["December", "снежня"],
@@ -120,9 +117,8 @@
         M_EN2BE.push({k: p[0], v: p[1]});
     });
 
-    // Б) BE -> EN (Когда на сайте выбран английский язык)
+    // Б) BE -> EN (Для английской версии)
     var be2en_pairs = [
-        // Заголовки, Шапка, Категории
         ["НАВІНЫ", "NEWS"],
         ["Навіны", "News"],
         ["навіны", "news"],
@@ -172,7 +168,7 @@
         M_BE2EN.push({k: p[0], v: p[1]});
     });
 
-    // === 4. ФУНКЦИЯ ПЕРЕВОДА (Текст + Формы + Элементы) ===
+    // === 4. ПРЯМАЯ ФУНКЦИЯ ПЕРЕВОДА (Без ловушки reg.test) ===
     function translatePage(dict) {
         // 1. Текстовые узлы DOM
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
@@ -181,27 +177,28 @@
             var t = n.nodeValue, changed = 0;
             dict.forEach(x => {
                 var reg = makeRegex(x.k);
-                if(reg.test(t)){
-                    t = t.replace(reg, x.v);
+                var newT = t.replace(reg, x.v);
+                if(newT !== t){
+                    t = newT;
                     changed = 1;
                 }
             });
             if(changed) n.nodeValue = t;
         }
 
-        // 2. Инпуты, Кнопки, Лейблы, Ссылки
+        // 2. Инпуты, Формы, Кнопки
         Q('input, textarea, button, label, a, h1, h2, h3, h4, .title').forEach(e => {
             dict.forEach(x => {
                 var reg = makeRegex(x.k);
                 
-                if(e.placeholder && reg.test(e.placeholder)) {
-                    e.placeholder = e.placeholder.replace(reg, x.v);
+                if(e.placeholder) {
+                    var newP = e.placeholder.replace(reg, x.v);
+                    if(newP !== e.placeholder) e.placeholder = newP;
                 }
 
                 if(e.tagName === 'INPUT' && e.value && typeof e.value === 'string') {
-                    if(reg.test(e.value)) {
-                        e.value = e.value.replace(reg, x.v);
-                    }
+                    var newV = e.value.replace(reg, x.v);
+                    if(newV !== e.value) e.value = newV;
                 }
             });
         });
@@ -278,4 +275,8 @@
 
         // Скрытие брендинга RadioKing
         Q('div,footer,p').forEach(d => {
-            if(d
+            if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
+        });
+
+    }, 300);
+})();
