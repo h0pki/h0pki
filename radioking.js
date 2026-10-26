@@ -1,7 +1,7 @@
 (function(){
     var D = document;
 
-    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И СТИЛЬНАЯ КНОПКА C ФЛАГАМИ ===
+    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
     function getLang() { 
         return localStorage.getItem('site_lang') || 'be'; 
     }
@@ -12,10 +12,18 @@
     }
 
     function renderLangSwitcher() {
-        if (D.getElementById('lang-switcher')) return;
+        var existing = D.getElementById('lang-switcher');
+        // Если висит старая кнопка (без класса lang-btn), удаляем её
+        if (existing) {
+            if (!existing.querySelector('.lang-btn')) {
+                existing.remove();
+            } else {
+                return;
+            }
+        }
+
         var currentLang = getLang();
 
-        // Добавляем адаптивные стили в head
         if (!D.getElementById('lang-switcher-styles')) {
             D.head.insertAdjacentHTML('beforeend', `
                 <style id="lang-switcher-styles">
@@ -61,7 +69,6 @@
                         color: #ccc;
                         font-weight: 300;
                     }
-                    /* Адаптив под мобильные устройства */
                     @media (max-width: 768px) {
                         #lang-switcher {
                             bottom: 12px;
@@ -82,10 +89,7 @@
         var box = D.createElement('div');
         box.id = 'lang-switcher';
 
-        // SVG Флаг БЧБ (Бело-красно-белый)
         var bcbFlag = '<svg width="18" height="12" viewBox="0 0 18 12" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><rect width="18" height="12" fill="#FFFFFF"/><rect y="4" width="18" height="4" fill="#D62626"/></svg>';
-        
-        // SVG Флаг Великобритании (Union Jack)
         var ukFlag = '<svg width="18" height="12" viewBox="0 0 60 30" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><clipPath id="gb_clip"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#gb_clip)"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>';
 
         box.innerHTML = `
