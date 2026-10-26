@@ -278,5 +278,5 @@
             if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
         });
 
-    }, 300);
+    }, 1000);
 })();
