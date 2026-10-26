@@ -51,4 +51,83 @@
             var txt = (link.textContent||"").toLowerCase().trim();
             var isTarget = txt.includes('слухаць') || txt.includes('кантакт') || txt.includes('listen') || txt.includes('contact');
             
-            if(!isTarget) return
+            if(!isTarget) return;
+            
+            link.setAttribute('data-pc-fixed','1');
+            if(!isMob){
+                link.addEventListener('click', function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }, true);
+            }
+        });
+    }
+
+    var resizeTimer;
+    window.addEventListener('resize', function(){
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function(){
+            Q('a.sf-with-ul[data-pc-fixed]').forEach(el => el.removeAttribute('data-pc-fixed'));
+            fixMenuOnce();
+        }, 250);
+    });
+
+    setTimeout(fixMenuOnce, 300);
+    setTimeout(fixMenuOnce, 1000);
+    setInterval(fixMenuOnce, 3000);
+
+    // === 5. ОСНОВНОЙ ЦИКЛ ОБРАБОТКИ ===
+    setInterval(() => {
+        if(!D.body) return;
+
+        // Кнопка переключения BE | EN
+        renderLangSwitcher();
+
+        // Перевод текста (запускается ТОЛЬКО для белорусского языка)
+        if(getLang() === 'be') {
+            var w = D.createTreeWalker(D.body, 4, null, 0), n;
+            while(n = w.nextNode()){
+                if(n.parentNode && ['SCRIPT','STYLE'].includes(n.parentNode.tagName)) continue;
+                var t = n.nodeValue, c = 0;
+                M.forEach(x => {
+                    var r = new RegExp(x.k.includes(' ')?x.k:"\\b"+x.k+"\\b", "gi");
+                    if(r.test(t)){ t = t.replace(r, x.v); c = 1; }
+                });
+                if(c) n.nodeValue = t;
+            }
+
+            Q('input,button,label,a[role="button"]').forEach(e => {
+                var v = (e.value || e.textContent || "").trim().toLowerCase();
+                M.forEach(x => {
+                    if(v.includes(x.k.toLowerCase())){
+                        if(e.value) e.value = x.v;
+                        else e.textContent = e.textContent.replace(new RegExp(x.k, "gi"), x.v);
+                    }
+                });
+            });
+        }
+
+        // Замена Twitter -> Telegram @BelSmol (работает Всегда)
+        Q('a[href*="twitter"],a[href*="t.me"]').forEach(l => {
+            var p = l.closest('.link-socials-item');
+            if(!p) return;
+            p.className = 'link-socials-item tc';
+            l.href = "https://t.me/BelSmol";
+            if(!l.querySelector('svg')){
+                l.style = "";
+                p.style = "";
+                l.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:1em;height:1em;vertical-align:middle"><path d="M21.54 2.1l-20.6 7.95c-.8.3-.79.77.14 1.05l5.44 1.74 12.35-7.79c.58-.37 1.12-.17.68.22l-11 9.8v.02l.02.01-.02-.01v4.43c0 .64.35.79.73.4l2.13-2.07 4.44 3.28c.81.45 1.4.22 1.6-.75l2.9-13.65c.27-1.08-.38-1.57-1.12-1.25z"/></svg>';
+            }
+            var p2 = p.querySelector('.link-socials-item-popup');
+            if(p2 && p2.textContent.toLowerCase().includes('twitter')) p2.textContent = 'Telegram';
+        });
+
+        // Скрытие плашек RadioKing (работает Всегда)
+        Q('div,footer,p').forEach(d => {
+            if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
+        });
+
+    }, 1000);
+})();
