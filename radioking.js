@@ -31,125 +31,124 @@
         D.getElementById('btn-en').onclick = () => setLang('en');
     }
 
-    // === 2. СЛОВАРИ ===
-    // А) Английский -> Белорусский (системный интерфейс RadioKing)
-    "Listen podcast|Cлyxаць пaдкacт|Download podcast|Cпaмaвaць пaдкacт|more|БOЛЬШ|Comment|Kaмeнтaвaть|comments|Кaмeнтapы|log in|Увaйcцi|create account|Cтвapыць aкayнт|first name|Iмя|phone number|Тэлeфoн|subject|Тэмa|message|Пaвeдaмлeннe|website|Caйт|See also|Глядзiцe такcaмa|send message|Aдпpaвiць|views|пpaглядaў|January|cтyдзeня|February|лютaгa|March|caкaвiкa|April|кpacaвiкa|May|тpaўня|June|чэpвeня|July|лiпeня|August|жнiўня|September|вepacня|October|кacтpычнiкa|November|лicтaпaдa|December|cнeжня".split("|").forEach((v,i,a)=>{if(i%2==0)M_EN2BE.push({k:v,v:a[i+1]})});
-    "hours|ГAДЗIН|hour|ГAДЗIНY|minutes|ХВIЛIН|minute|ХВIЛIНY|days|ДЗЁН|day|ДЗEНЬ|weeks|ТЫДНЯЎ|week|ТЫДЗEНЬ|months|МECЯЦAЎ|month|МECЯЦ|years|ГAДOЎ|year|ГOД".split("|").forEach((v,i,a)=>{if(i%2==0)M_EN2BE.push({k:v+" ago",v:a[i+1]+" ТAМY"})});
-    M_EN2BE.sort((a,b)=>b.k.length-a.k.length);
+    // === 2. ПОИСК С УЧЕТОМ РЕГИСТРА И БУКВ І/I ===
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 
-    // Б) Белорусский -> Английский (ваши меню, шапка и категории)
-    var be2en_pairs = [
-        "ГАЛОЎНАЯ|HOME", "НАВІНЫ|NEWS", "СЛУХАЦЬ|LISTEN", "ВІДЭА|VIDEO", "АРТЫКУЛЫ|ARTICLES", "КАНТАКТ|CONTACT",
-        "Галоўная|Home", "Навіны|News", "Слухаць|Listen", "Відэа|Video", "Артыкулы|Articles", "Кантакт|Contact",
-        "АПОШНІЯ ПАДКАСТЫ|LATEST PODCASTS", "Апошнія падкасты|Latest Podcasts",
-        "Беларуская палітыка|Belarusian Politics", "Беларусь-Смаленск|Belarus-Smolensk", "Беларусь|Belarus",
-        "Польшча|Poland", "Расія|Russia", "Смаленск|Smolensk", "Украіна|Ukraine"
+    function makeRegex(text) {
+        var pattern = escapeRegExp(text).replace(/[ІіIi]/g, '[ІіIi]');
+        return new RegExp(pattern, 'gi');
+    }
+
+    // === 3. СЛОВАРИ (Двусторонний перевод) ===
+
+    // А) EN -> BE (При выбранном белорусском языке)
+    var en2be_pairs = [
+        // Кнопка More в блоках
+        ["MORE", "БОЛЬШ"],
+        ["more", "БОЛЬШ"],
+        ["More", "БОЛЬШ"],
+
+        // Форма контактов
+        ["CONTACT US!", "ЗВЯЖЫЦЕСЯ З НАМІ!"],
+        ["Contact us!", "Звяжыцеся з намі!"],
+        ["Contact us", "Звяжыцеся з намі"],
+        ["First name *", "Імя *"],
+        ["First name", "Імя"],
+        ["Phone number", "Тэлефон"],
+        ["Website", "Сайт"],
+        ["Subject *", "Тэма *"],
+        ["Subject", "Тэма"],
+        ["Message *", "Паведамленне *"],
+        ["Message", "Паведамленне"],
+        ["Please copy the following letters", "Увядзіце сімвалы з малюнка"],
+        ["Send message", "Адправіць паведамленне"],
+        ["Send", "Адправіць"],
+
+        // Системные уведомления и индикаторы
+        ["Loading...", "Загружаецца..."],
+        ["Loading..", "Загружаецца.."],
+        ["Loading.", "Загружаецца."],
+        ["Loading", "Загружаецца"],
+        ["Listen podcast", "Слухаць падкаст"],
+        ["Download podcast", "Спампаваць падкаст"],
+        ["Comment", "Каментаваць"],
+        ["comments", "Каментары"],
+        ["log in", "Увайсці"],
+        ["create account", "Стварыць акаўнт"],
+        ["See also", "Глядзіце таксама"],
+        ["views", "праглядаў"],
+
+        // Даты и время
+        ["January", "студзеня"], ["February", "лютага"], ["March", "сакавіка"], ["April", "красавіка"],
+        ["May", "траўня"], ["June", "чэрвеня"], ["July", "ліпеня"], ["August", "жніўня"],
+        ["September", "верасня"], ["October", "кастрычніка"], ["November", "лістапада"], ["December", "снежня"],
+        ["hours ago", "ГАДЗІН ТАМУ"], ["hour ago", "ГАДЗІНУ ТАМУ"], ["minutes ago", "ХВІЛІН ТАМУ"],
+        ["minute ago", "ХВІЛІНУ ТАМУ"], ["days ago", "ДЗЁН ТАМУ"], ["day ago", "ДЗЕНЬ ТАМУ"],
+        ["weeks ago", "ТЫДНЯЎ ТАМУ"], ["week ago", "ТЫДЗЕНЬ ТАМУ"], ["months ago", "МЕСЯЦАЎ ТАМУ"],
+        ["month ago", "МЕСЯЦ ТАМУ"], ["years ago", "ГАДОЎ ТАМУ"], ["year ago", "ГОД ТАМУ"]
     ];
-    be2en_pairs.forEach(pair => {
-        var parts = pair.split("|");
-        M_BE2EN.push({k: parts[0], v: parts[1]});
-    });
-    M_BE2EN.sort((a,b)=>b.k.length-a.k.length);
 
-    // Подмена текста без регулярных выражений (работает с кириллицей)
+    en2be_pairs.sort((a,b) => b[0].length - a[0].length);
+    en2be_pairs.forEach(p => {
+        M_EN2BE.push({k: p[0], v: p[1]});
+    });
+
+    // Б) BE -> EN (При выбранном английском языке)
+    var be2en_pairs = [
+        // Кнопка БОЛЬШ
+        ["БОЛЬШ", "MORE"],
+        ["Больш", "MORE"],
+        ["больш", "MORE"],
+
+        // Заголовки и формы
+        ["ЗВЯЖЫЦЕСЯ З НАМІ!", "CONTACT US!"],
+        ["Звяжыцеся з намі!", "Contact Us!"],
+        ["Звяжыцеся з намі", "Contact Us"],
+        ["Імя *", "First name *"],
+        ["Імя", "First name"],
+        ["Тэлефон", "Phone number"],
+        ["Сайт", "Website"],
+        ["Тэма *", "Subject *"],
+        ["Тэма", "Subject"],
+        ["Паведамленне *", "Message *"],
+        ["Паведамленне", "Message"],
+        ["Увядзіце сімвалы з малюнка", "Please copy the following letters"],
+        ["Адправіць паведамленне", "Send message"],
+        ["Адправіць", "Send"],
+
+        // Разделы сайдбара и меню
+        ["АПОШНІЯ НАВІНЫ", "LATEST NEWS"],
+        ["Апошнія навіны", "Latest News"],
+        ["АПОШНІЯ ПАДКАСТЫ", "LATEST PODCASTS"],
+        ["Апошнія падкасты", "Latest Podcasts"],
+        ["Нашы сацсеткі", "Our Socials"],
+        ["Беларуская палітыка", "Belarusian Politics"],
+        ["Беларусь-Смаленск", "Belarus-Smolensk"],
+        ["Галоўная", "Home"],
+        ["Навіны", "News"],
+        ["Слухаць", "Listen"],
+        ["Падкаст", "Podcast"],
+        ["Музыка", "Music"],
+        ["Відэа", "Videos"],
+        ["Артыкулы", "Articles"],
+        ["Кантакт", "Contact"],
+        ["Каманда", "Team"],
+        ["Плэйлісты", "Playlists"],
+        ["Галерэя", "Gallery"],
+        ["Беларусь", "Belarus"],
+        ["Польшча", "Poland"],
+        ["Расія", "Russia"],
+        ["Смаленск", "Smolensk"],
+        ["Украіна", "Ukraine"]
+    ];
+
+    be2en_pairs.sort((a,b) => b[0].length - a[0].length);
+    be2en_pairs.forEach(p => {
+        M_BE2EN.push({k: p[0], v: p[1]});
+    });
+
+    // === 4. ФУНКЦИЯ ПЕРЕВОДА ===
     function translatePage(dict) {
-        var w = D.createTreeWalker(D.body, 4, null, 0), n;
-        while(n = w.nextNode()){
-            if(n.parentNode && ['SCRIPT','STYLE'].includes(n.parentNode.tagName)) continue;
-            var t = n.nodeValue, changed = 0;
-            dict.forEach(x => {
-                if(t.includes(x.k)) {
-                    t = t.split(x.k).join(x.v);
-                    changed = 1;
-                }
-            });
-            if(changed) n.nodeValue = t;
-        }
-
-        Q('input,button,label,a[role="button"]').forEach(e => {
-            var v = (e.value || e.textContent || "");
-            dict.forEach(x => {
-                if(v.includes(x.k)){
-                    if(e.value) e.value = e.value.split(x.k).join(x.v);
-                    else e.textContent = e.textContent.split(x.k).join(x.v);
-                }
-            });
-        });
-    }
-
-    // === 3. СТИЛИ И ФИКС МЕНЮ ===
-    if(!D.getElementById('tc')) {
-        D.head.insertAdjacentHTML('beforeend','<style id="tc">.tc::before,.tc a::before{display:none!important}.tc{position:relative!important;overflow:hidden!important;background:0 0!important}.tc a{position:relative;z-index:2;transition:color .3s}.tc::after{content:"";position:absolute;top:-100%;left:0;width:100%;height:100%;background:#24A1DE;transition:top .25s;z-index:1}.tc:hover::after{top:0}.tc:hover a{color:#fff!important}</style>');
-    }
-
-    function isMobile(){ return window.innerWidth <= 1024; }
-
-    function fixMenuOnce(){
-        var isMob = isMobile();
-        Q('a.sf-with-ul').forEach(function(link){
-            if(link.getAttribute('data-pc-fixed')) return;
-            var txt = (link.textContent||"").toLowerCase().trim();
-            var isTarget = txt.includes('слухаць') || txt.includes('кантакт') || txt.includes('listen') || txt.includes('contact');
-            
-            if(!isTarget) return;
-            
-            link.setAttribute('data-pc-fixed','1');
-            if(!isMob){
-                link.addEventListener('click', function(e){
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }, true);
-            }
-        });
-    }
-
-    var resizeTimer;
-    window.addEventListener('resize', function(){
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function(){
-            Q('a.sf-with-ul[data-pc-fixed]').forEach(el => el.removeAttribute('data-pc-fixed'));
-            fixMenuOnce();
-        }, 250);
-    });
-
-    setTimeout(fixMenuOnce, 300);
-    setTimeout(fixMenuOnce, 1000);
-    setInterval(fixMenuOnce, 3000);
-
-    // === 4. ЦИКЛ ===
-    setInterval(() => {
-        if(!D.body) return;
-
-        renderLangSwitcher();
-
-        var currentLang = getLang();
-        if(currentLang === 'be') {
-            translatePage(M_EN2BE);
-        } else if(currentLang === 'en') {
-            translatePage(M_BE2EN);
-        }
-
-        // Замена Twitter -> Telegram @BelSmol
-        Q('a[href*="twitter"],a[href*="t.me"]').forEach(l => {
-            var p = l.closest('.link-socials-item');
-            if(!p) return;
-            p.className = 'link-socials-item tc';
-            l.href = "https://t.me/BelSmol";
-            if(!l.querySelector('svg')){
-                l.style = "";
-                p.style = "";
-                l.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:1em;height:1em;vertical-align:middle"><path d="M21.54 2.1l-20.6 7.95c-.8.3-.79.77.14 1.05l5.44 1.74 12.35-7.79c.58-.37 1.12-.17.68.22l-11 9.8v.02l.02.01-.02-.01v4.43c0 .64.35.79.73.4l2.13-2.07 4.44 3.28c.81.45 1.4.22 1.6-.75l2.9-13.65c.27-1.08-.38-1.57-1.12-1.25z"/></svg>';
-            }
-            var p2 = p.querySelector('.link-socials-item-popup');
-            if(p2 && p2.textContent.toLowerCase().includes('twitter')) p2.textContent = 'Telegram';
-        });
-
-        // Скрытие RadioKing
-        Q('div,footer,p').forEach(d => {
-            if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
-        });
-
-    }, 1000);
-})();
+        var w = D.createTreeWalker(D.body, 4, null,
