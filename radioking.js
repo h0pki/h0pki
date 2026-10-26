@@ -1,25 +1,14 @@
 (function(){
     var D = document;
 
-    // Глубокая нормализация (убирает неразрывные пробелы, регистр и объединяет латинские двойники с кириллицей)
+    // Нормализация текста (убирает пробелы, привозит к нижнему регистру и объединяет І/I)
     function norm(str) {
         if (!str) return "";
         return str
             .replace(/[\u00A0\s]+/g, ' ')
             .trim()
             .toLowerCase()
-            .replace(/h/g, 'н')
-            .replace(/a/g, 'а')
-            .replace(/b/g, 'в')
-            .replace(/i/g, 'і')
-            .replace(/y/g, 'ы')
-            .replace(/o/g, 'о')
-            .replace(/p/g, 'р')
-            .replace(/c/g, 'с')
-            .replace(/e/g, 'е')
-            .replace(/t/g, 'т')
-            .replace(/k/g, 'к')
-            .replace(/x/g, 'х');
+            .replace(/[іi]/g, 'i');
     }
 
     // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
@@ -159,6 +148,8 @@
         "смаленск": "SMOLENSK",
         "украіна": "UKRAINE",
         "больш": "MORE",
+        "увайсці": "LOG IN",
+        "уваход": "LOG IN",
         "імя *": "FIRST NAME *",
         "імя": "FIRST NAME",
         "тэлефон": "PHONE NUMBER",
@@ -173,6 +164,9 @@
     };
 
     var EN2BE_RAW = {
+        "log in": "УВАЙСЦІ",
+        "login": "УВАЙСЦІ",
+        "log in!": "УВАЙСЦІ!",
         "home": "ГАЛОЎНАЯ",
         "news": "НАВІНЫ",
         "listen": "СЛУХАЦЬ",
@@ -235,31 +229,6 @@
         var lang = getLang();
         var map = (lang === 'en') ? BE2EN : EN2BE;
 
-        var elements = D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div, p');
-        elements.forEach(function(el){
-            if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return;
-            if (el.children.length === 0 && el.textContent) {
-                var cleanNorm = norm(el.textContent);
-                if (map[cleanNorm]) {
-                    el.textContent = map[cleanNorm];
-                } else if (lang === 'be') {
-                    var dateTrans = translateDates(el.textContent);
-                    if (dateTrans !== el.textContent) el.textContent = dateTrans;
-                }
-            }
-        });
-
-        D.querySelectorAll('input, textarea').forEach(function(el){
-            if (el.placeholder) {
-                var pNorm = norm(el.placeholder);
-                if (map[pNorm]) el.placeholder = map[pNorm];
-            }
-            if (el.tagName === 'INPUT' && el.value && typeof el.value === 'string') {
-                var vNorm = norm(el.value);
-                if (map[vNorm]) el.value = map[vNorm];
-            }
-        });
-
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while (n = w.nextNode()) {
             if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
@@ -274,6 +243,17 @@
                 if (dateTrans !== val) n.nodeValue = dateTrans;
             }
         }
+
+        D.querySelectorAll('input, textarea, button, a, .btn, label').forEach(function(el){
+            if (el.placeholder) {
+                var pNorm = norm(el.placeholder);
+                if (map[pNorm]) el.placeholder = map[pNorm];
+            }
+            if (el.tagName === 'INPUT' && el.value && typeof el.value === 'string') {
+                var vNorm = norm(el.value);
+                if (map[vNorm]) el.value = map[vNorm];
+            }
+        });
     }
 
     // === 4. ФИКС МЕНЮ И СОЦСЕТЕЙ ===
