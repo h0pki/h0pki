@@ -149,7 +149,12 @@
         "украіна": "UKRAINE",
         "больш": "MORE",
         "увайсці": "LOG IN",
-        "уваход": "LOG IN",
+        "уваход": "CONNECTION",
+        "стварыць акаўнт": "CREATE ACCOUNT",
+        "пароль": "PASSWORD",
+        "электронная пошта": "EMAIL",
+        "забыліся пароль?": "FORGOTTEN PASSWORD?",
+        "забыліся пароль": "FORGOTTEN PASSWORD?",
         "імя *": "FIRST NAME *",
         "імя": "FIRST NAME",
         "тэлефон": "PHONE NUMBER",
@@ -164,9 +169,16 @@
     };
 
     var EN2BE_RAW = {
+        "connection": "УВАХОД",
+        "create account": "СТВАРЫЦЬ АКАЎНТ",
+        "email": "Электронная пошта",
+        "password": "Пароль",
         "log in": "УВАЙСЦІ",
         "login": "УВАЙСЦІ",
         "log in!": "УВАЙСЦІ!",
+        "forgotten password?": "Забыліся пароль?",
+        "forgotten password": "Забыліся пароль?",
+        "forgot password?": "Забыліся пароль?",
         "home": "ГАЛОЎНАЯ",
         "news": "НАВІНЫ",
         "listen": "СЛУХАЦЬ",
@@ -219,4 +231,106 @@
         return text
             .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
             .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
-            .replace(/(\d+)\s+months?\s+ago
+            .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 МЕСЯЦ ТАМУ' : num + ' МЕСЯЦАЎ ТАМУ'; })
+            .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
+            .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
+    }
+
+    // === 3. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА ===
+    function runTranslation() {
+        var lang = getLang();
+        var map = (lang === 'en') ? BE2EN : EN2BE;
+
+        // Прямой перехват элементов формы авторизации
+        D.querySelectorAll('a, button, .btn, label, h1, h2, h3, span, div').forEach(function(el){
+            if (el.children.length === 0 && el.textContent) {
+                var cleanNorm = norm(el.textContent);
+                if (map[cleanNorm]) {
+                    el.textContent = map[cleanNorm];
+                }
+            }
+        });
+
+        // Обход всех текстовых узлов страницы
+        var w = D.createTreeWalker(D.body, 4, null, 0), n;
+        while (n = w.nextNode()) {
+            if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
+            var val = n.nodeValue;
+            if (!val || !val.trim()) continue;
+            
+            var keyNorm = norm(val);
+            if (map[keyNorm]) {
+                n.nodeValue = map[keyNorm];
+            } else if (lang === 'be') {
+                var dateTrans = translateDates(val);
+                if (dateTrans !== val) n.nodeValue = dateTrans;
+            }
+        }
+
+        D.querySelectorAll('input, textarea').forEach(function(el){
+            if (el.placeholder) {
+                var pNorm = norm(el.placeholder);
+                if (map[pNorm]) el.placeholder = map[pNorm];
+            }
+            if (el.tagName === 'INPUT' && el.value && typeof el.value === 'string') {
+                var vNorm = norm(el.value);
+                if (map[vNorm]) el.value = map[vNorm];
+            }
+        });
+    }
+
+    // === 4. ФИКС МЕНЮ И СОЦСЕТЕЙ ===
+    function isMobile(){ return window.innerWidth <= 1024; }
+
+    function fixMenuOnce(){
+        var isMob = isMobile();
+        D.querySelectorAll('a.sf-with-ul').forEach(function(link){
+            if(link.getAttribute('data-pc-fixed')) return;
+            var txt = (link.textContent||"").toLowerCase().trim();
+            if(!txt.includes('слухаць') && !txt.includes('кантакт') && !txt.includes('listen') && !txt.includes('contact')) return;
+            link.setAttribute('data-pc-fixed','1');
+            if(!isMob){
+                link.addEventListener('click', function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }, true);
+            }
+        });
+    }
+
+    function fixSocialsAndFooter(){
+        D.querySelectorAll('a[href*="twitter"],a[href*="t.me"]').forEach(function(l){
+            var p = l.closest('.link-socials-item');
+            if(!p) return;
+            p.className = 'link-socials-item tc';
+            l.href = "https://t.me/BelSmol";
+            if(!l.querySelector('svg')){
+                l.style = "";
+                p.style = "";
+                l.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:1em;height:1em;vertical-align:middle"><path d="M21.54 2.1l-20.6 7.95c-.8.3-.79.77.14 1.05l5.44 1.74 12.35-7.79c.58-.37 1.12-.17.68.22l-11 9.8v.02l.02.01-.02-.01v4.43c0 .64.35.79.73.4l2.13-2.07 4.44 3.28c.81.45 1.4.22 1.6-.75l2.9-13.65c.27-1.08-.38-1.57-1.12-1.25z"/></svg>';
+            }
+            var p2 = p.querySelector('.link-socials-item-popup');
+            if(p2 && p2.textContent.toLowerCase().includes('twitter')) p2.textContent = 'Telegram';
+        });
+
+        D.querySelectorAll('div,footer,p').forEach(function(d){
+            if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
+        });
+    }
+
+    // === 5. СТИЛИ И ИНИЦИАЛИЗАЦИЯ ===
+    if(!D.getElementById('tc')) {
+        D.head.insertAdjacentHTML('beforeend','<style id="tc">.tc::before,.tc a::before{display:none!important}.tc{position:relative!important;overflow:hidden!important;background:0 0!important}.tc a{position:relative;z-index:2;transition:color .3s}.tc::after{content:"";position:absolute;top:-100%;left:0;width:100%;height:100%;background:#24A1DE;transition:top .25s;z-index:1}.tc:hover::after{top:0}.tc:hover a{color:#fff!important}</style>');
+    }
+
+    setInterval(function(){
+        if(!D.body) return;
+        renderLangSwitcher();
+        runTranslation();
+        fixMenuOnce();
+        fixSocialsAndFooter();
+    }, 300);
+
+})();
