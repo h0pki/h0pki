@@ -1,7 +1,6 @@
 (function(){
     var D = document;
 
-    // Нормализация текста (удаление лишних пробелов и объединение І/I)
     function norm(str) {
         if (!str) return "";
         return str
@@ -154,7 +153,6 @@
         "пароль": "PASSWORD",
         "электронная пошта": "EMAIL",
         "забыліся пароль?": "FORGOTTEN PASSWORD?",
-        "забыліся пароль": "FORGOTTEN PASSWORD?",
         "імя *": "FIRST NAME *",
         "імя": "FIRST NAME",
         "тэлефон": "PHONE NUMBER",
@@ -236,38 +234,32 @@
             .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
     }
 
-    // === 3. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА ===
-    function runTranslation() {
-        var lang = getLang();
-        var map = (lang === 'en') ? BE2EN : EN2BE;
+    // === 3. РЕКУРСИВНЫЙ ПОИСК И ПЕРЕВОД (Включая Shadow DOM) ===
+    function translateRoot(root, map, lang) {
+        if (!root) return;
 
-        // Прямой перехват элементов формы авторизации
-        D.querySelectorAll('a, button, .btn, label, h1, h2, h3, span, div').forEach(function(el){
+        // Поиск по всем элементам
+        var nodes = root.querySelectorAll ? root.querySelectorAll('*') : [];
+        nodes.forEach(function(el){
+            // Если у элемента есть теневой DOM (Shadow Root)
+            if (el.shadowRoot) {
+                translateRoot(el.shadowRoot, map, lang);
+            }
+
+            if (['SCRIPT','STYLE','TEXTAREA'].includes(el.tagName)) return;
+
+            // Перевод текста в концевых узлах
             if (el.children.length === 0 && el.textContent) {
                 var cleanNorm = norm(el.textContent);
                 if (map[cleanNorm]) {
                     el.textContent = map[cleanNorm];
+                } else if (lang === 'be') {
+                    var dateTrans = translateDates(el.textContent);
+                    if (dateTrans !== el.textContent) el.textContent = dateTrans;
                 }
             }
-        });
 
-        // Обход всех текстовых узлов страницы
-        var w = D.createTreeWalker(D.body, 4, null, 0), n;
-        while (n = w.nextNode()) {
-            if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
-            var val = n.nodeValue;
-            if (!val || !val.trim()) continue;
-            
-            var keyNorm = norm(val);
-            if (map[keyNorm]) {
-                n.nodeValue = map[keyNorm];
-            } else if (lang === 'be') {
-                var dateTrans = translateDates(val);
-                if (dateTrans !== val) n.nodeValue = dateTrans;
-            }
-        }
-
-        D.querySelectorAll('input, textarea').forEach(function(el){
+            // Перевод плейсхолдеров и кнопок
             if (el.placeholder) {
                 var pNorm = norm(el.placeholder);
                 if (map[pNorm]) el.placeholder = map[pNorm];
@@ -277,6 +269,30 @@
                 if (map[vNorm]) el.value = map[vNorm];
             }
         });
+
+        // Дополнительный проход по текстовым узлам
+        if (root.createTreeWalker) {
+            var w = root.createTreeWalker(root, 4, null, 0), n;
+            while (n = w.nextNode()) {
+                if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
+                var val = n.nodeValue;
+                if (!val || !val.trim()) continue;
+                
+                var keyNorm = norm(val);
+                if (map[keyNorm]) {
+                    n.nodeValue = map[keyNorm];
+                } else if (lang === 'be') {
+                    var dateTrans = translateDates(val);
+                    if (dateTrans !== val) n.nodeValue = dateTrans;
+                }
+            }
+        }
+    }
+
+    function runTranslation() {
+        var lang = getLang();
+        var map = (lang === 'en') ? BE2EN : EN2BE;
+        translateRoot(D.body, map, lang);
     }
 
     // === 4. ФИКС МЕНЮ И СОЦСЕТЕЙ ===
