@@ -4,7 +4,7 @@
         M_EN2BE = [],
         M_BE2EN = [];
 
-    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И ПЕРЕКЛЮЧАТЕЛЬ ===
+    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ ===
     function getLang() {
         return localStorage.getItem('site_lang') || 'be';
     }
@@ -32,17 +32,17 @@
     }
 
     // === 2. СЛОВАРИ ===
-    // А) Английский -> Белорусский (системные элементы RadioKing)
+    // А) Английский -> Белорусский (системный интерфейс RadioKing)
     "Listen podcast|Cлyxаць пaдкacт|Download podcast|Cпaмaвaць пaдкacт|more|БOЛЬШ|Comment|Kaмeнтaвaть|comments|Кaмeнтapы|log in|Увaйcцi|create account|Cтвapыць aкayнт|first name|Iмя|phone number|Тэлeфoн|subject|Тэмa|message|Пaвeдaмлeннe|website|Caйт|See also|Глядзiцe такcaмa|send message|Aдпpaвiць|views|пpaглядaў|January|cтyдзeня|February|лютaгa|March|caкaвiкa|April|кpacaвiкa|May|тpaўня|June|чэpвeня|July|лiпeня|August|жнiўня|September|вepacня|October|кacтpычнiкa|November|лicтaпaдa|December|cнeжня".split("|").forEach((v,i,a)=>{if(i%2==0)M_EN2BE.push({k:v,v:a[i+1]})});
     "hours|ГAДЗIН|hour|ГAДЗIНY|minutes|ХВIЛIН|minute|ХВIЛIНY|days|ДЗЁН|day|ДЗEНЬ|weeks|ТЫДНЯЎ|week|ТЫДЗEНЬ|months|МECЯЦAЎ|month|МECЯЦ|years|ГAДOЎ|year|ГOД".split("|").forEach((v,i,a)=>{if(i%2==0)M_EN2BE.push({k:v+" ago",v:a[i+1]+" ТAМY"})});
     M_EN2BE.sort((a,b)=>b.k.length-a.k.length);
 
-    // Б) Белорусский -> Английский (ваши меню, категории и заголовки из панели)
+    // Б) Белорусский -> Английский (ваши меню, шапка и категории)
     var be2en_pairs = [
         "ГАЛОЎНАЯ|HOME", "НАВІНЫ|NEWS", "СЛУХАЦЬ|LISTEN", "ВІДЭА|VIDEO", "АРТЫКУЛЫ|ARTICLES", "КАНТАКТ|CONTACT",
         "Галоўная|Home", "Навіны|News", "Слухаць|Listen", "Відэа|Video", "Артыкулы|Articles", "Кантакт|Contact",
         "АПОШНІЯ ПАДКАСТЫ|LATEST PODCASTS", "Апошнія падкасты|Latest Podcasts",
-        "Беларуская палітыка|Belarusian Politics", "Беларусь|Belarus", "Беларусь-Смаленск|Belarus-Smolensk",
+        "Беларуская палітыка|Belarusian Politics", "Беларусь-Смаленск|Belarus-Smolensk", "Беларусь|Belarus",
         "Польшча|Poland", "Расія|Russia", "Смаленск|Smolensk", "Украіна|Ukraine"
     ];
     be2en_pairs.forEach(pair => {
@@ -51,25 +51,27 @@
     });
     M_BE2EN.sort((a,b)=>b.k.length-a.k.length);
 
-    // Функция подмены текста на странице
+    // Подмена текста без регулярных выражений (работает с кириллицей)
     function translatePage(dict) {
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while(n = w.nextNode()){
             if(n.parentNode && ['SCRIPT','STYLE'].includes(n.parentNode.tagName)) continue;
-            var t = n.nodeValue, c = 0;
+            var t = n.nodeValue, changed = 0;
             dict.forEach(x => {
-                var r = new RegExp(x.k.includes(' ')?x.k:"\\b"+x.k+"\\b", "g");
-                if(r.test(t)){ t = t.replace(r, x.v); c = 1; }
+                if(t.includes(x.k)) {
+                    t = t.split(x.k).join(x.v);
+                    changed = 1;
+                }
             });
-            if(c) n.nodeValue = t;
+            if(changed) n.nodeValue = t;
         }
 
         Q('input,button,label,a[role="button"]').forEach(e => {
-            var v = (e.value || e.textContent || "").trim();
+            var v = (e.value || e.textContent || "");
             dict.forEach(x => {
                 if(v.includes(x.k)){
-                    if(e.value) e.value = e.value.replace(new RegExp(x.k,"g"), x.v);
-                    else e.textContent = e.textContent.replace(new RegExp(x.k,"g"), x.v);
+                    if(e.value) e.value = e.value.split(x.k).join(x.v);
+                    else e.textContent = e.textContent.split(x.k).join(x.v);
                 }
             });
         });
@@ -116,7 +118,7 @@
     setTimeout(fixMenuOnce, 1000);
     setInterval(fixMenuOnce, 3000);
 
-    // === 4. ОСНОВНОЙ ЦИКЛ ОБРАБОТКИ ===
+    // === 4. ЦИКЛ ===
     setInterval(() => {
         if(!D.body) return;
 
@@ -144,7 +146,7 @@
             if(p2 && p2.textContent.toLowerCase().includes('twitter')) p2.textContent = 'Telegram';
         });
 
-        // Скрытие плашек RadioKing
+        // Скрытие RadioKing
         Q('div,footer,p').forEach(d => {
             if(d.textContent.includes('RadioKing') && d.offsetHeight < 99) d.style.display = 'none';
         });
