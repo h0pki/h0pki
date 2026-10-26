@@ -1,7 +1,7 @@
 (function(){
     var D = document;
 
-    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
+   // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
     function getLang() { 
         return localStorage.getItem('site_lang') || 'be'; 
     }
