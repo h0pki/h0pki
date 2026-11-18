@@ -1,7 +1,7 @@
 (function(){
     var D = document;
 
-    // Нормализация текста (убирает неразрывные пробелы, регистр и объединяет І/I)
+    // Глубокая нормализация строк
     function norm(str) {
         if (!str) return "";
         return str
@@ -125,6 +125,7 @@
         "слухаць": "LISTEN",
         "відэа": "VIDEO",
         "артыкулы": "ARTICLES",
+        "артысты": "ARTISTS",
         "кантакт": "CONTACT",
         "падкаст": "PODCAST",
         "падкасты": "PODCASTS",
@@ -186,6 +187,8 @@
         "listen": "СЛУХАЦЬ",
         "video": "ВІДЭА",
         "articles": "АРТЫКУЛЫ",
+        "artists": "АРТЫСТЫ",
+        "artist": "АРТЫСТ",
         "contact": "КАНТАКТ",
         "podcast": "ПАДКАСТ",
         "podcasts": "ПАДКАСТЫ",
@@ -229,13 +232,12 @@
     for (var k in BE2EN_RAW) { BE2EN[norm(k)] = BE2EN_RAW[k]; }
     for (var k in EN2BE_RAW) { EN2BE[norm(k)] = EN2BE_RAW[k]; }
 
-    // === 3. ДИНАМИЧЕСКАЯ ПОДМЕНА ДАТ, МЕСЯЦЕВ, ПРОСМОТРОВ И КОММЕНТАРИЕВ ===
+    // === 3. ДИНАМИЧЕСКАЯ ПОДМЕНА: ВСЕ 12 МЕСЯЦЕВ, ПРОСМОТРЫ И ДАТЫ ===
     function translateDynamicMeta(text, lang) {
         if (!text || typeof text !== 'string') return text;
         var res = text;
 
         if (lang === 'be') {
-            // Относительные даты
             res = res
                 .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 ДЗЕНЬ ТАМУ' : num + ' ДЗЁН ТАМУ'; })
                 .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
@@ -243,7 +245,6 @@
                 .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
                 .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
 
-            // Месяцы в датах постов
             res = res
                 .replace(/\bjanuary\b/gi, 'студзеня')
                 .replace(/\bfebruary\b/gi, 'лютага')
@@ -258,7 +259,6 @@
                 .replace(/\bnovember\b/gi, 'лістапада')
                 .replace(/\bdecember\b/gi, 'снежня');
 
-            // Просмотры и комментарии
             res = res
                 .replace(/\bviews\b/gi, 'ПРАГЛЯДАЎ')
                 .replace(/\bview\b/gi, 'ПРАГЛЯД')
@@ -295,7 +295,6 @@
         var lang = getLang();
         var map = (lang === 'en') ? BE2EN : EN2BE;
 
-        // Прямой обход DOM-дерева для текстовых узлов
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while (n = w.nextNode()) {
             if (n.parentNode && ['SCRIPT','STYLE','TEXTAREA','INPUT'].includes(n.parentNode.tagName)) continue;
@@ -311,7 +310,6 @@
             }
         }
 
-        // Обход концевых элементов (заголовки, ссылки, плейсхолдеры)
         D.querySelectorAll('a, button, label, h1, h2, h3, h4, .title, .widget-title, span, div, p').forEach(function(el){
             if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(el.tagName)) return;
             if (el.children.length === 0 && el.textContent) {
@@ -325,7 +323,6 @@
             }
         });
 
-        // Инпуты и формы
         D.querySelectorAll('input, textarea').forEach(function(el){
             if (el.placeholder) {
                 var pNorm = norm(el.placeholder);
