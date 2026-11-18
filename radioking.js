@@ -1,7 +1,6 @@
 (function(){
     var D = document;
 
-    // Глубокая нормализация строк
     function norm(str) {
         if (!str) return "";
         return str
@@ -18,7 +17,67 @@
     
     function setLang(lang) { 
         localStorage.setItem('site_lang', lang); 
+        if (lang === 'be') {
+            // Сброс куки Google Translate при возврате на белорусский
+            D.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            D.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + location.hostname;
+        } else if (lang === 'en') {
+            // Активация перевода на английский (с русского/белорусского)
+            D.cookie = "googtrans=/auto/en; path=/;";
+            D.cookie = "googtrans=/auto/en; path=/; domain=." + location.hostname;
+        }
         location.reload(); 
+    }
+
+    // Подключение скрытого движка Google Translate для статей на ENG
+    function initAutoTranslate() {
+        var lang = getLang();
+        if (lang !== 'en') return;
+
+        // Установка куки до загрузки скрипта
+        D.cookie = "googtrans=/auto/en; path=/;";
+
+        if (!D.getElementById('gt-hide-styles')) {
+            D.head.insertAdjacentHTML('beforeend', `
+                <style id="gt-hide-styles">
+                    .goog-te-banner-frame.skiptranslate,
+                    .goog-te-gadget-icon,
+                    #goog-gt-tt,
+                    .goog-te-balloon-frame,
+                    .VIpgJd-ZVi9od-ORHb-OEVmcd,
+                    .VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+                        display: none !important;
+                    }
+                    body {
+                        top: 0px !important;
+                        position: static !important;
+                    }
+                    font {
+                        background-color: transparent !important;
+                        box-shadow: none !important;
+                    }
+                </style>
+            `);
+        }
+
+        if (!D.getElementById('google_translate_element')) {
+            var gtDiv = D.createElement('div');
+            gtDiv.id = 'google_translate_element';
+            gtDiv.style.display = 'none';
+            D.body.appendChild(gtDiv);
+
+            window.googleTranslateElementInit = function() {
+                new window.google.translate.TranslateElement({
+                    pageLanguage: 'ru',
+                    includedLanguages: 'en',
+                    autoDisplay: false
+                }, 'google_translate_element');
+            };
+
+            var gtScript = D.createElement('script');
+            gtScript.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            D.head.appendChild(gtScript);
+        }
     }
 
     function renderLangSwitcher() {
@@ -97,6 +156,7 @@
 
         var box = D.createElement('div');
         box.id = 'lang-switcher';
+        box.className = 'notranslate';
 
         var bcbFlag = '<svg width="18" height="12" viewBox="0 0 18 12" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><rect width="18" height="12" fill="#FFFFFF"/><rect y="4" width="18" height="4" fill="#D62626"/></svg>';
         var ukFlag = '<svg width="18" height="12" viewBox="0 0 60 30" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><clipPath id="gb_clip"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#gb_clip)"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>';
@@ -304,9 +364,13 @@
             var keyNorm = norm(val);
             if (map[keyNorm]) {
                 n.nodeValue = map[keyNorm];
+                if (n.parentNode) n.parentNode.classList.add('notranslate');
             } else {
                 var dynTrans = translateDynamicMeta(val, lang);
-                if (dynTrans !== val) n.nodeValue = dynTrans;
+                if (dynTrans !== val) {
+                    n.nodeValue = dynTrans;
+                    if (n.parentNode) n.parentNode.classList.add('notranslate');
+                }
             }
         }
 
@@ -316,9 +380,13 @@
                 var cleanNorm = norm(el.textContent);
                 if (map[cleanNorm]) {
                     el.textContent = map[cleanNorm];
+                    el.classList.add('notranslate');
                 } else {
                     var dynTrans = translateDynamicMeta(el.textContent, lang);
-                    if (dynTrans !== el.textContent) el.textContent = dynTrans;
+                    if (dynTrans !== el.textContent) {
+                        el.textContent = dynTrans;
+                        el.classList.add('notranslate');
+                    }
                 }
             }
         });
@@ -385,6 +453,7 @@
         if(!D.body) return;
         renderLangSwitcher();
         runTranslation();
+        initAutoTranslate();
         fixMenuOnce();
         fixSocialsAndFooter();
     }, 400);
