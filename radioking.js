@@ -10,7 +10,7 @@
             .replace(/[іi]/g, 'i');
     }
 
-    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ФЛАГАМИ ===
+    // === 1. УПРАВЛЕНИЕ ЯЗЫКОМ И КНОПКА С ТРЕМЯ ФЛАГАМИ ===
     function getLang() { 
         return localStorage.getItem('site_lang') || 'be'; 
     }
@@ -18,24 +18,24 @@
     function setLang(lang) { 
         localStorage.setItem('site_lang', lang); 
         if (lang === 'be') {
-            // Сброс куки Google Translate при возврате на белорусский
             D.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             D.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + location.hostname;
         } else if (lang === 'en') {
-            // Активация перевода на английский (с русского/белорусского)
             D.cookie = "googtrans=/auto/en; path=/;";
             D.cookie = "googtrans=/auto/en; path=/; domain=." + location.hostname;
+        } else if (lang === 'pl') {
+            D.cookie = "googtrans=/auto/pl; path=/;";
+            D.cookie = "googtrans=/auto/pl; path=/; domain=." + location.hostname;
         }
         location.reload(); 
     }
 
-    // Подключение скрытого движка Google Translate для статей на ENG
+    // Подключение скрытого движка Google Translate для статей на ENG и POL
     function initAutoTranslate() {
         var lang = getLang();
-        if (lang !== 'en') return;
+        if (lang === 'be') return;
 
-        // Установка куки до загрузки скрипта
-        D.cookie = "googtrans=/auto/en; path=/;";
+        D.cookie = "googtrans=/auto/" + lang + "; path=/;";
 
         if (!D.getElementById('gt-hide-styles')) {
             D.head.insertAdjacentHTML('beforeend', `
@@ -69,7 +69,7 @@
             window.googleTranslateElementInit = function() {
                 new window.google.translate.TranslateElement({
                     pageLanguage: 'ru',
-                    includedLanguages: 'en',
+                    includedLanguages: 'en,pl',
                     autoDisplay: false
                 }, 'google_translate_element');
             };
@@ -83,7 +83,7 @@
     function renderLangSwitcher() {
         var existing = D.getElementById('lang-switcher');
         if (existing) {
-            if (!existing.querySelector('.lang-btn')) {
+            if (!existing.querySelector('#btn-pl')) {
                 existing.remove();
             } else {
                 return;
@@ -107,7 +107,7 @@
                         border-radius: 8px;
                         display: flex;
                         align-items: center;
-                        gap: 12px;
+                        gap: 10px;
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         font-size: 13px;
                         font-weight: 700;
@@ -120,7 +120,7 @@
                         cursor: pointer;
                         display: flex;
                         align-items: center;
-                        gap: 6px;
+                        gap: 5px;
                         padding-bottom: 3px;
                         border-bottom: 2px solid transparent;
                         color: #666;
@@ -141,9 +141,9 @@
                         #lang-switcher {
                             bottom: 12px;
                             right: 12px;
-                            padding: 5px 10px;
-                            font-size: 12px;
-                            gap: 8px;
+                            padding: 5px 9px;
+                            font-size: 11px;
+                            gap: 7px;
                             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
                         }
                         .lang-btn {
@@ -160,6 +160,7 @@
 
         var bcbFlag = '<svg width="18" height="12" viewBox="0 0 18 12" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><rect width="18" height="12" fill="#FFFFFF"/><rect y="4" width="18" height="4" fill="#D62626"/></svg>';
         var ukFlag = '<svg width="18" height="12" viewBox="0 0 60 30" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><clipPath id="gb_clip"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4" clip-path="url(#gb_clip)"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>';
+        var plFlag = '<svg width="18" height="12" viewBox="0 0 18 12" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);"><rect width="18" height="6" fill="#FFFFFF"/><rect y="6" width="18" height="6" fill="#DC143C"/></svg>';
 
         box.innerHTML = `
             <div id="btn-be" class="lang-btn ${currentLang==='be'?'active':''}">
@@ -171,15 +172,21 @@
                 ${ukFlag}
                 <span>ENG</span>
             </div>
+            <span class="lang-divider">|</span>
+            <div id="btn-pl" class="lang-btn ${currentLang==='pl'?'active':''}">
+                ${plFlag}
+                <span>POL</span>
+            </div>
         `;
         D.body.appendChild(box);
 
         D.getElementById('btn-be').onclick = function(){ setLang('be'); };
         D.getElementById('btn-en').onclick = function(){ setLang('en'); };
+        D.getElementById('btn-pl').onclick = function(){ setLang('pl'); };
     }
 
     // === 2. СЛОВАРИ ТОЧНЫХ СОВПАДЕНИЙ ===
-    var BE2EN_RAW = {
+    var TO_EN_RAW = {
         "галоўная": "HOME",
         "навіны": "NEWS",
         "слухаць": "LISTEN",
@@ -230,7 +237,7 @@
         "адправіць": "SEND"
     };
 
-    var EN2BE_RAW = {
+    var TO_BE_RAW = {
         "see also": "Глядзіце таксама",
         "see also:": "Глядзіце таксама:",
         "log in to comment": "Увайдзіце, каб пакінуць каментар",
@@ -288,9 +295,115 @@
         "loading": "ЗАГРУЖАЕЦЦА"
     };
 
-    var BE2EN = {}, EN2BE = {};
-    for (var k in BE2EN_RAW) { BE2EN[norm(k)] = BE2EN_RAW[k]; }
-    for (var k in EN2BE_RAW) { EN2BE[norm(k)] = EN2BE_RAW[k]; }
+    var TO_PL_RAW = {
+        "галоўная": "GŁÓWNA",
+        "home": "GŁÓWNA",
+        "навіны": "WIADOMOŚCI",
+        "news": "WIADOMOŚCI",
+        "слухаць": "SŁUCHAJ",
+        "listen": "SŁUCHAJ",
+        "відэа": "WIDEO",
+        "video": "WIDEO",
+        "артыкулы": "ARTYKUŁY",
+        "articles": "ARTYKUŁY",
+        "артысты": "ARTYŚCI",
+        "artists": "ARTYŚCI",
+        "artist": "ARTYSTA",
+        "кантакт": "KONTAKT",
+        "contact": "KONTAKT",
+        "падкаст": "PODCAST",
+        "podcast": "PODCAST",
+        "падкасты": "PODCASTY",
+        "podcasts": "PODCASTY",
+        "музыка": "MUZYKA",
+        "music": "MUZYKA",
+        "musics": "MUZYKA",
+        "каманда": "ZESPÓŁ",
+        "team": "ZESPÓŁ",
+        "плэйлісты": "PLAYLISTY",
+        "playlists": "PLAYLISTY",
+        "галерэя": "GALERIA",
+        "gallery": "GALERIA",
+        "апошнія навіны": "OSTATNIE WIADOMOŚCI",
+        "latest news": "OSTATNIE WIADOMOŚCI",
+        "апошнія падкасты": "OSTATNIE PODCASTY",
+        "latest podcasts": "OSTATNIE PODCASTY",
+        "нашы сацсеткі": "NASZE SOCIAL MEDIA",
+        "our socials": "NASZE SOCIAL MEDIA",
+        "звяжыцеся з намі!": "SKONTAKTUJ SIĘ Z NAMI!",
+        "contact us!": "SKONTAKTUJ SIĘ Z NAMI!",
+        "звяжыцеся з намі": "SKONTAKTUJ SIĘ Z NAMI",
+        "contact us": "SKONTAKTUJ SIĘ Z NAMI",
+        "вядоўцы": "PROWADZĄCY",
+        "hosts": "PROWADZĄCY",
+        "кіраўніцтва": "ZARZĄD",
+        "management": "ZARZĄD",
+        "беларуская палітыка": "POLITYKA BIAŁORUSKA",
+        "belarusian politics": "POLITYKA BIAŁORUSKA",
+        "беларусь-смаленск": "BIAŁORUŚ-SMOLEŃSK",
+        "belarus-smolensk": "BIAŁORUŚ-SMOLEŃSK",
+        "беларусь": "BIAŁORUŚ",
+        "belarus": "BIAŁORUŚ",
+        "польшча": "POLSKA",
+        "poland": "POLSKA",
+        "расія": "ROSJA",
+        "russia": "ROSJA",
+        "смаленск": "SMOLEŃSK",
+        "smolensk": "SMOLEŃSK",
+        "украіна": "UKRAINA",
+        "ukraine": "UKRAINA",
+        "больш": "WIĘCEJ",
+        "more": "WIĘCEJ",
+        "увайсці": "ZALOGUJ SIĘ",
+        "log in": "ZALOGUJ SIĘ",
+        "login": "ZALOGUJ SIĘ",
+        "log in!": "ZALOGUJ SIĘ!",
+        "уваход": "LOGOWANIE",
+        "connection": "LOGOWANIE",
+        "стварыць акаўнт": "UTWÓRZ KONTO",
+        "create account": "UTWÓRZ KONTO",
+        "пароль": "Hasło",
+        "password": "Hasło",
+        "электронная пошта": "E-mail",
+        "email": "E-mail",
+        "забыліся пароль?": "Zapomniałeś hasła?",
+        "forgotten password?": "Zapomniałeś hasła?",
+        "глядзіце таксама": "Zobacz również",
+        "see also": "Zobacz również",
+        "see also:": "Zobacz również:",
+        "увайдзіце, каб пакінуць каментар": "Zaloguj się, aby dodać komentarz",
+        "log in to comment": "Zaloguj się, aby dodać komentarz",
+        "імя *": "IMIĘ *",
+        "first name *": "IMIĘ *",
+        "імя": "IMIĘ",
+        "first name": "IMIĘ",
+        "тэлефон": "NUMER TELEFONU",
+        "phone number": "NUMER TELEFONU",
+        "сайт": "STRONA INTERNETOWA",
+        "website": "STRONA INTERNETOWA",
+        "тэма *": "TEMAT *",
+        "subject *": "TEMAT *",
+        "тэма": "TEMAT",
+        "subject": "TEMAT",
+        "паведамленне *": "WIADOMOŚĆ *",
+        "message *": "WIADOMOŚĆ *",
+        "паведамленне": "WIADOMOŚĆ",
+        "message": "WIADOMOŚĆ",
+        "увядзіце сімвалы з малюнка": "PRZEPISZ ZNAKI Z OBRAZKA",
+        "please copy the following letters": "PRZEPISZ ZNAKI Z OBRAZKA",
+        "адправіць паведамленне": "WYŚLIJ WIADOMOŚĆ",
+        "send message": "WYŚLIJ WIADOMOŚĆ",
+        "адправіць": "WYŚLIJ",
+        "send": "WYŚLIJ",
+        "loading...": "ŁADOWANIE...",
+        "loading..": "ŁADOWANIE..",
+        "loading": "ŁADOWANIE"
+    };
+
+    var TO_EN = {}, TO_BE = {}, TO_PL = {};
+    for (var k in TO_EN_RAW) { TO_EN[norm(k)] = TO_EN_RAW[k]; }
+    for (var k in TO_BE_RAW) { TO_BE[norm(k)] = TO_BE_RAW[k]; }
+    for (var k in TO_PL_RAW) { TO_PL[norm(k)] = TO_PL_RAW[k]; }
 
     // === 3. ДИНАМИЧЕСКАЯ ПОДМЕНА: ВСЕ 12 МЕСЯЦЕВ, ПРОСМОТРЫ И ДАТЫ ===
     function translateDynamicMeta(text, lang) {
@@ -303,9 +416,7 @@
                 .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 ТЫДЗЕНЬ ТАМУ' : num + ' ТЫДНЯЎ ТАМУ'; })
                 .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 МЕСЯЦ ТАМУ' : num + ' МЕСЯЦАЎ ТАМУ'; })
                 .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГОД ТАМУ' : num + ' ГАДОЎ ТАМУ'; })
-                .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; });
-
-            res = res
+                .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 ГАДЗІНУ ТАМУ' : num + ' ГАДЗІН ТАМУ'; })
                 .replace(/\bjanuary\b/gi, 'студзеня')
                 .replace(/\bfebruary\b/gi, 'лютага')
                 .replace(/\bmarch\b/gi, 'сакавіка')
@@ -317,9 +428,7 @@
                 .replace(/\bseptember\b/gi, 'верасня')
                 .replace(/\boctober\b/gi, 'кастрычніка')
                 .replace(/\bnovember\b/gi, 'лістапада')
-                .replace(/\bdecember\b/gi, 'снежня');
-
-            res = res
+                .replace(/\bdecember\b/gi, 'снежня')
                 .replace(/\bviews\b/gi, 'ПРАГЛЯДАЎ')
                 .replace(/\bview\b/gi, 'ПРАГЛЯД')
                 .replace(/\bcomments\b/gi, 'Каментары')
@@ -345,6 +454,32 @@
                 .replace(/\bкаментары\b/gi, 'Comments')
                 .replace(/увайдзіце, каб пакінуць каментар/gi, 'Log in to comment')
                 .replace(/глядзіце таксама/gi, 'See also');
+
+        } else if (lang === 'pl') {
+            res = res
+                .replace(/(\d+)\s+days?\s+ago/gi, function(_, num){ return num == 1 ? '1 DZIEŃ TEMU' : num + ' DNI TEMU'; })
+                .replace(/(\d+)\s+weeks?\s+ago/gi, function(_, num){ return num == 1 ? '1 TYDZIEŃ TEMU' : num + ' TYGODNI TEMU'; })
+                .replace(/(\d+)\s+months?\s+ago/gi, function(_, num){ return num == 1 ? '1 MIESIĄC TEMU' : num + ' MIESIĘCY TEMU'; })
+                .replace(/(\d+)\s+years?\s+ago/gi, function(_, num){ return num == 1 ? '1 ROK TEMU' : num + ' LAT TEMU'; })
+                .replace(/(\d+)\s+hours?\s+ago/gi, function(_, num){ return num == 1 ? '1 GODZINĘ TEMU' : num + ' GODZIN TEMU'; })
+                .replace(/\b(january|студзеня)\b/gi, 'stycznia')
+                .replace(/\b(february|лютага)\b/gi, 'lutego')
+                .replace(/\b(march|сакавіка)\b/gi, 'marca')
+                .replace(/\b(april|красавіка)\b/gi, 'kwietnia')
+                .replace(/\b(may|траўня)\b/gi, 'maja')
+                .replace(/\b(june|чэрвеня)\b/gi, 'czerwca')
+                .replace(/\b(july|ліпеня)\b/gi, 'lipca')
+                .replace(/\b(august|жніўня)\b/gi, 'sierpnia')
+                .replace(/\b(september|верасня)\b/gi, 'września')
+                .replace(/\b(october|кастрычніка)\b/gi, 'października')
+                .replace(/\b(november|лістапада)\b/gi, 'listopada')
+                .replace(/\b(december|снежня)\b/gi, 'grudnia')
+                .replace(/\b(views|праглядаў)\b/gi, 'WYŚWIETLEŃ')
+                .replace(/\b(view|прагляд)\b/gi, 'WYŚWIETLENIE')
+                .replace(/\b(comments|каментары)\b/gi, 'Komentarze')
+                .replace(/\b(comment|каментар)\b/gi, 'Komentarz')
+                .replace(/(log in to comment|увайдзіце, каб пакінуць каментар)/gi, 'Zaloguj się, aby dodać komentarz')
+                .replace(/(see also|глядзіце таксама)/gi, 'Zobacz również');
         }
 
         return res;
@@ -353,7 +488,7 @@
     // === 4. ПРЯМАЯ ЗАМЕНА ЭЛЕМЕНТОВ И ТЕКСТА ===
     function runTranslation() {
         var lang = getLang();
-        var map = (lang === 'en') ? BE2EN : EN2BE;
+        var map = (lang === 'en') ? TO_EN : (lang === 'pl' ? TO_PL : TO_BE);
 
         var w = D.createTreeWalker(D.body, 4, null, 0), n;
         while (n = w.nextNode()) {
@@ -411,7 +546,7 @@
         D.querySelectorAll('a.sf-with-ul').forEach(function(link){
             if(link.getAttribute('data-pc-fixed')) return;
             var txt = (link.textContent||"").toLowerCase().trim();
-            if(!txt.includes('слухаць') && !txt.includes('кантакт') && !txt.includes('listen') && !txt.includes('contact')) return;
+            if(!txt.includes('слухаць') && !txt.includes('кантакт') && !txt.includes('listen') && !txt.includes('contact') && !txt.includes('słuchaj') && !txt.includes('kontakt')) return;
             link.setAttribute('data-pc-fixed','1');
             if(!isMob){
                 link.addEventListener('click', function(e){
